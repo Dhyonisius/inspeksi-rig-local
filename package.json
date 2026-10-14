@@ -1,0 +1,10 @@
+{
+  "name": "lentera-k3-local",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Aplikasi lokal inspeksi visual rig dan kantor dengan kurasi foto dan tampilan ADS",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

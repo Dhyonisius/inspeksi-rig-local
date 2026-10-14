@@ -1,0 +1,22 @@
+.rig-training-panel { margin-top: 24px; }
+[data-rig-training] { scroll-margin-top: 110px; }
+#rig-scan-title { scroll-margin-top: 110px; }
+.rig-training-panel > p, .rig-training-panel form > p { line-height: 1.65; }
+.rig-training-panel h3 { margin: 28px 0 14px; font-size: 18px; }
+.rig-training-form { max-width: 850px; }
+.rig-training-panel .inline-label { display: block; margin-top: 16px; }
+.rig-training-panel .dt-consent { margin: 18px 0; }
+.rig-training-panel [data-rig-readiness] { margin: 16px 0; }
+.rig-training-panel ul { padding-left: 24px; line-height: 1.65; }
+.rig-training-panel details { margin: 16px 0; }
+.rig-training-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.rig-training-table th, .rig-training-table td { padding: 10px 12px; border: 1px solid #d4dce8; text-align: left; }
+.rig-training-table th { background: #f0f8fe; color: #254f88; }
+.rig-training-job { border-top: 1px solid #d4dce8; padding: 18px 0; }
+.rig-training-job p { line-height: 1.6; }
+.rig-training-job progress { width: 100%; accent-color: #3c6db2; }
+.rig-training-job .dt-error { white-space: pre-wrap; overflow-wrap: anywhere; }
+.rig-scan-frame { position: relative; width: min(100%, 640px); margin-top: 16px; }
+.rig-scan-frame img { display: block; width: 100%; height: auto; border-radius: 4px; }
+.rig-scan-box { position: absolute; box-sizing: border-box; border: 2px solid #b00020; pointer-events: none; }
+.rig-scan-box > span { display: block; width: max-content; max-width: 180px; background: #b00020; color: #fff; padding: 2px 4px; font-size: 12px; overflow-wrap: anywhere; }

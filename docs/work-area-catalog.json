@@ -1,0 +1,578 @@
+[
+  {
+    "name": "Accumulator",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Accumulator"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Agitator",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Agitator"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Air Hoist / Hydraulic Winch",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Air Hoist / Hydraulic Winch"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Annular",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Annular"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Bendera Guyline",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Bendera Guyline"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Blind Shear Ram",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Blind Shear Ram"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Bowen Power Swivel",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Bowen Power Swivel"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Choke Manifold",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Choke Manifold"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Crown Block",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Crown Block"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Discharge Line",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Discharge Line"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Drawwork",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Drawwork",
+      "Draw Work"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Drilling Line",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Drilling Line"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Drilling Spool",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Drilling Spool"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Drippan",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Drippan"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Electric Motor",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Electric motor"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Elevator & Link",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Elevator & Link"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Equipment",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Equipment"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Foto Dokumen Checklist Survey Lokasi/Well",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Foto Dokumen Checklist Survey Lokasi/Well"
+    ],
+    "documents": [
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Genset",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Genset"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Guyline",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Guyline"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Kelly Hose",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Kelly hose"
+    ],
+    "documents": [
+      "CRSSC_BDSI-19_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Manual Rotary Tong",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Manual Rotary Tong"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Mast",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Mast"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Mud Gas Separator",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Mud Gas Separator"
+    ],
+    "documents": [
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Mud Pump",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Mud Pump"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Mud Tank",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Mud tank"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Open Type Power Tong",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Open Type Power Tong"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "PJSM",
+    "area_type": "RIG",
+    "pdf_names": [
+      "PJSM"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Ram BOP",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Ram BOP"
+    ],
+    "documents": [
+      "CRSSC_BDSI-19_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Rig Carrier Equipment",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Rig Carrier Equipment"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Rig Engine",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Rig Engine"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Rig Mast",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Rig Mast"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Rod Tong",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Rod Tong"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Safety Pin Guyline",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Safety Pin Guyline"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Sand Line & Sand Drum",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Sand Line & Sand Drum"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Shale Shaker",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Shale Shaker"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Single Ram",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Single Ram"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Standpipe Manifold",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Standpipe manifold"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Travelling Block",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Travelling Block"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Tubing Base / Matng Board",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Tubing Base/Matng Board"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "WARNING SIGN VALVE",
+    "area_type": "RIG",
+    "pdf_names": [
+      "WARNING SIGN VALVE"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Working Platform",
+    "area_type": "RIG",
+    "pdf_names": [
+      "Working Platorm"
+    ],
+    "documents": [
+      "CRSSC_AU-15_05-Oct-2026.pdf",
+      "CRSSC_BDSI-19_05-Oct-2026.pdf",
+      "CRSSC_BMS-05_05-Oct-2026.pdf",
+      "CRSSC_BMS-20_05-Oct-2026.pdf",
+      "CRSSC_GW-363_05-Oct-2026.pdf"
+    ]
+  },
+  {
+    "name": "Ruangan Kantor",
+    "area_type": "KANTOR",
+    "pdf_names": [],
+    "documents": []
+  }
+]
