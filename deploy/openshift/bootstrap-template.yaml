@@ -1,0 +1,53 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: inspeksi-rig-bootstrap
+parameters:
+  - name: IMAGE
+    required: true
+  - name: MODE
+    value: --create-admin
+objects:
+  - apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: inspeksi-rig-bootstrap
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 1800
+      ttlSecondsAfterFinished: 86400
+      template:
+        spec:
+          automountServiceAccountToken: false
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: initialize
+              image: ${IMAGE}
+              command: [node, scripts/openshift-bootstrap.js]
+              args: ['${MODE}']
+              envFrom:
+                - configMapRef:
+                    name: inspeksi-rig-config
+                - secretRef:
+                    name: inspeksi-rig-sql-migrator
+                - secretRef:
+                    name: inspeksi-rig-admin-bootstrap
+                    optional: true
+              resources:
+                requests: {cpu: 100m, memory: 128Mi}
+                limits: {cpu: 500m, memory: 256Mi}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: [ALL]
+              volumeMounts:
+                - name: temporary
+                  mountPath: /tmp
+          volumes:
+            - name: temporary
+              emptyDir: {}

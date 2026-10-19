@@ -140,6 +140,7 @@
   }
 
   function showLogin(errorText = '') {
+    const localDemo = ['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname) && location.protocol === 'http:';
     renderGeneration += 1; authGeneration += 1; state.user = null;
     clearTimeout(searchTimer);
     closePageTools();
@@ -155,13 +156,13 @@
       <form class="login-card" id="login-form">
         <div class="login-brand"><strong class="login-title">Inspeksi Lokal</strong></div>
         <p class="eyebrow">RUANG KERJA INSPEKSI LOKAL</p><h1>Selamat datang</h1><p class="page-subtitle">Masuk untuk menganalisis foto dengan model visi lokal dan menyimpan koreksi label.</p>
-        <label class="inline-label" for="login-email">Email</label><input class="field" id="login-email" name="email" type="email" autocomplete="username" value="operator@k3.local" required>
-        <label class="inline-label" for="login-password">Kata sandi</label><input class="field" id="login-password" name="password" type="password" autocomplete="current-password" value="K3-demo-2026" required>
+        <label class="inline-label" for="login-email">Email</label><input class="field" id="login-email" name="email" type="email" autocomplete="username" value="${localDemo ? 'operator@k3.local' : ''}" required>
+        <label class="inline-label" for="login-password">Kata sandi</label><input class="field" id="login-password" name="password" type="password" autocomplete="current-password" value="${localDemo ? 'K3-demo-2026' : ''}" required>
         ${errorText ? `<p class="form-error" role="alert">${escapeHtml(errorText)}</p>` : ''}
         ${databaseStatusPanel()}
         <button class="btn btn-primary" style="width:100%;margin-top:17px" type="submit" ${logoutFlight || loginFlight ? 'disabled' : ''}>${logoutFlight ? 'Menyelesaikan keluar…' : 'Masuk ke workspace <span class="btn-icon">→</span>'}</button>
-        <div class="login-demo"><strong>Akun demonstrasi lokal</strong><br>Pengguna: operator@k3.local · Admin: admin@k3.local<br>Kata sandi: <strong>K3-demo-2026</strong></div>
-        <div class="login-note"><span>▣</span><span>Aplikasi hanya mendengarkan di perangkat ini. Gunakan data foto yang boleh dipakai untuk pemeriksaan.</span></div>
+        ${localDemo ? '<div class="login-demo"><strong>Akun demonstrasi lokal</strong><br>Pengguna: operator@k3.local · Admin: admin@k3.local<br>Kata sandi: <strong>K3-demo-2026</strong></div>' : ''}
+        <div class="login-note"><span>▣</span><span>Gunakan akun yang diberikan administrator dan foto yang diizinkan untuk pemeriksaan.</span></div>
       </form>`;
   }
 

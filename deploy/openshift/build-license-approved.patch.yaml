@@ -1,0 +1,9 @@
+# Apply only after your company approves the Microsoft SQL tools license.
+spec:
+  strategy:
+    dockerStrategy:
+      buildArgs:
+        - name: ACCEPT_SQLTOOLS_EULA
+          value: Y
+        - name: INSTALL_RIG_TRAINING
+          value: 'false'

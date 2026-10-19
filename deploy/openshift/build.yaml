@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: image.openshift.io/v1
+    kind: ImageStream
+    metadata:
+      name: inspeksi-rig
+  - apiVersion: build.openshift.io/v1
+    kind: BuildConfig
+    metadata:
+      name: inspeksi-rig
+    spec:
+      runPolicy: Serial
+      successfulBuildsHistoryLimit: 2
+      failedBuildsHistoryLimit: 2
+      source:
+        type: Git
+        git:
+          uri: https://github.com/Dhyonisius/inspeksi-rig-local.git
+          ref: main
+        sourceSecret:
+          name: github-inspeksi-read
+      strategy:
+        type: Docker
+        dockerStrategy:
+          dockerfilePath: Dockerfile
+          buildArgs:
+            - name: ACCEPT_SQLTOOLS_EULA
+              value: N
+            - name: INSTALL_RIG_TRAINING
+              value: 'false'
+      output:
+        to:
+          kind: ImageStreamTag
+          name: inspeksi-rig:latest
+      # Builds are explicitly started after repository access and license approval.
+      triggers: []
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1Gi
+        limits:
+          cpu: '2'
+          memory: 4Gi

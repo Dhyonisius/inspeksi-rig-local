@@ -31,7 +31,7 @@ SET NUMERIC_ROUNDABORT OFF;`;
 export function runProcess(file, args, options = {}) {
   return new Promise((resolve, reject) => {
     let child;
-    try { child = spawn(file, args, { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] }); }
+    try { child = spawn(file, args, { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'], ...(options.env ? { env: options.env } : {}) }); }
     catch (error) { reject(error); return; }
     const stdout = [], stderr = [];
     let bytes = 0, failure = null;
@@ -61,7 +61,12 @@ export function runProcess(file, args, options = {}) {
   });
 }
 
-export function createSqlClient({ executable, server, tempDir, run = runProcess }) {
+export function createSqlClient({ executable, server, tempDir, run = runProcess,
+  user = process.env.SQL_USER, password = process.env.SQL_PASSWORD || process.env.SQLCMDPASSWORD,
+  encrypt = process.env.SQL_ENCRYPT || (process.platform === 'win32' ? 'optional' : 'mandatory'),
+  trustCertificate = process.env.SQL_TRUST_SERVER_CERTIFICATE === undefined ? process.platform === 'win32' : process.env.SQL_TRUST_SERVER_CERTIFICATE === 'true' }) {
+  if (!['optional', 'mandatory', 'strict'].includes(encrypt)) throw new Error('SQL_ENCRYPT tidak valid.');
+  if (user && !password) throw new Error('SQL_PASSWORD wajib diisi untuk SQL_USER.');
   return async (query, { file, database } = {}) => {
     let temporaryFile;
     try {
@@ -72,10 +77,10 @@ export function createSqlClient({ executable, server, tempDir, run = runProcess 
         await fs.writeFile(temporaryFile, Buffer.from(`\uFEFF${sqlSessionPreamble}\n${query}\n`, 'utf16le'), { flag: 'wx' });
         file = temporaryFile;
       }
-      const args = ['-S', server, '-E', '-C', '-No', '-I', '-b', '-r', '1', '-x', '-X1', '-l', '30', '-t', '120', '-f', '65001', '-y', '0', '-w', '65535'];
+      const args = ['-S', server, ...(user ? ['-U', user] : ['-E']), ...(trustCertificate ? ['-C'] : []), `-N${{ optional: 'o', mandatory: 'm', strict: 's' }[encrypt]}`, '-I', '-b', '-r', '1', '-x', '-X1', '-l', '30', '-t', '120', '-f', '65001', '-y', '0', '-w', '65535'];
       if (database) args.push('-d', database);
       args.push('-i', file);
-      const { stdout } = await run(executable, args, { timeout: 150000, maxBuffer: 8 * 1024 * 1024 });
+      const { stdout } = await run(executable, args, { timeout: 150000, maxBuffer: 8 * 1024 * 1024, env: { ...process.env, ...(user ? { SQLCMDPASSWORD: password } : {}) } });
       return stdout.replace(/^\uFEFF/, '').trim();
     } finally {
       if (temporaryFile) await fs.unlink(temporaryFile).catch(() => {});

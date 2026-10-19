@@ -1,0 +1,24 @@
+# Allow only application sources into the build context.
+**
+!Dockerfile
+!package.json
+!server.js
+!public/
+!public/**
+!scripts/
+!scripts/**
+!sql/
+!sql/**
+!docs/
+!docs/work-area-catalog.json
+!deploy/
+!deploy/container/
+!deploy/container/requirements.txt
+**/__pycache__/**
+**/*.pyc
+**/*.log
+**/.env*
+**/*.pem
+**/*.key
+**/*.pfx
+**/*.p12

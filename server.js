@@ -33,17 +33,23 @@ const schemaFile = path.join(root, 'sql', 'database.sql');
 const featureSchemaFiles = ['live.sql', 'dataset-tools.sql', 'public-datasets.sql', 'dataset-delete.sql', 'rig-dataset.sql','learning-scope.sql','protect-curation.sql','annotation-learning.sql'].map(name => path.join(root, 'sql', name));
 const sanitizerFile = path.join(root, 'scripts', 'sanitize_image.py');
 const port = Number(process.env.PORT || 3180);
-const host = '127.0.0.1';
+const host = process.env.HOST || '127.0.0.1';
+const production = process.env.NODE_ENV === 'production';
+const localOnly = ['127.0.0.1', 'localhost', '::1'].includes(host);
+const allowedOrigins = new Set((process.env.APP_ORIGIN || '').split(',').map(value => value.trim()).filter(Boolean));
+if (!localOnly && !allowedOrigins.size) throw new Error('APP_ORIGIN wajib diisi saat HOST menerima koneksi jaringan.');
+const autoMigrate = process.env.SQL_MIGRATE_ON_START !== 'false';
+const secureCookie = production ? '; Secure' : '';
 const maxUploadBytes = 8 * 1024 * 1024;
 const maxRequestBytes = maxUploadBytes + 512 * 1024;
 const sessionCookie = 'lentera_session';
 const sessionHours = 8;
 const sessions = new Map();
 const loginAttempts = new Map();
-const sqlcmd = process.env.SQLCMD_EXE || 'C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\180\\Tools\\Binn\\SQLCMD.EXE';
+const sqlcmd = process.env.SQLCMD_EXE || (process.platform === 'win32' ? 'C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\180\\Tools\\Binn\\SQLCMD.EXE' : '/opt/mssql-tools18/bin/sqlcmd');
 const sqlServer = process.env.SQL_SERVER || '.\\SQLEXPRESS';
 const databaseName = 'K3VisionLocal';
-const ollamaBaseUrl = 'http://127.0.0.1:11434';
+const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
 const discoverOllamaVisionModels = createVisionModelList({ baseUrl: ollamaBaseUrl });
 const python = process.env.PYTHON_EXE || 'python';
 const modelListCache = createTimedCache({ ttlMs: 10000 });
@@ -154,7 +160,7 @@ async function checkDatabaseHealth() {
 
 async function ensureInspectionDatabase() {
   let health = await checkDatabaseHealth();
-  if (health.database === 'schema_pending') {
+  if (health.database === 'schema_pending' && autoMigrate) {
     await executeSql('', { file: schemaFile });
     for (const file of featureSchemaFiles) await executeSql('', { file });
     health = await checkDatabaseHealth();
@@ -165,8 +171,10 @@ async function ensureInspectionDatabase() {
 async function bootstrapDatabase() {
   await fs.promises.mkdir(uploadDir, { recursive: true });
   try {
-    await executeSql('', { file: schemaFile });
-    for (const file of featureSchemaFiles) await executeSql('', { file });
+    if (autoMigrate) {
+      await executeSql('', { file: schemaFile });
+      for (const file of featureSchemaFiles) await executeSql('', { file });
+    }
     await datasetTools.recoverEvaluations();
     const health = await checkDatabaseHealth();
     if (health.database !== 'ready') throw httpError(503, health.error, 'DATABASE_UNAVAILABLE');
@@ -211,7 +219,7 @@ function sendJson(response, status, body, headers = {}) {
 function sendError(response, error) {
   const status = error.status || 500;
   if (status >= 500) console.error('[api]', error.stack || error.message);
-  sendJson(response, status, { error: error.message || 'Terjadi kesalahan pada server lokal.', code: error.code || undefined });
+  sendJson(response, status, { error: production && status >= 500 ? 'Layanan belum siap. Hubungi administrator untuk memeriksa log server.' : error.message || 'Terjadi kesalahan pada server lokal.', code: error.code || undefined });
 }
 
 async function requestBody(incoming) {
@@ -318,7 +326,8 @@ async function handleApi(request, response, url) {
   const pathname = url.pathname;
   let match;
   if (method === 'GET' && pathname === '/api/health') {
-    return sendJson(response, 200, { app: 'Inspeksi Visual', host, api_version: 15, ...await checkDatabaseHealth() });
+    const health = await checkDatabaseHealth();
+    return sendJson(response, 200, { app: 'Inspeksi Visual', host, api_version: 15, deployment_mode: production ? 'server' : 'local', ...(production ? { database: health.database, error: health.database === 'ready' ? undefined : 'Database belum siap. Hubungi administrator.' } : health) });
   }
   const user = pathname === '/api/auth/login' ? null : requireUser(request);
   if (user && await protectCurationApi(request, response, url, user)) return;
@@ -334,7 +343,7 @@ async function handleApi(request, response, url) {
     const body = await jsonBody(request); const email = safeEmail(body.email); const password = String(body.password || '').slice(0, 160);
     const account = await jsonQuery(`SELECT user_id,full_name,email,password_hash,role,is_active FROM dbo.AppUser WHERE email=${sqlText(email)} AND is_active=1 FOR JSON PATH, WITHOUT_ARRAY_WRAPPER;`);
     let valid = false;
-    if (account?.password_hash) {
+    if (account?.password_hash && !(production && account.password_hash.startsWith('k3-local-demo-salt-v1:'))) {
       const [salt, expected] = account.password_hash.split(':');
       if (salt && /^[a-f0-9]{64}$/i.test(expected || '')) {
         const actual = crypto.pbkdf2Sync(password, salt, 150000, 32, 'sha256').toString('hex');
@@ -350,14 +359,14 @@ async function handleApi(request, response, url) {
     const sessionUser = { user_id: account.user_id, full_name: account.full_name, email: account.email, role: account.role === 'k3' ? 'operator' : account.role };
     sessions.set(token, { user: sessionUser, expiresAt: Date.now() + sessionHours * 60 * 60 * 1000 });
     await audit(account.user_id, 'LOGIN', 'AppUser', account.user_id);
-    return sendJson(response, 200, { user: sessionUser }, { 'Set-Cookie': `${sessionCookie}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${sessionHours * 3600}` });
+    return sendJson(response, 200, { user: sessionUser }, { 'Set-Cookie': `${sessionCookie}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${sessionHours * 3600}${secureCookie}` });
   }
   if (method === 'GET' && pathname === '/api/auth/me') return sendJson(response, 200, { user });
   if (method === 'GET' && pathname === '/api/ai/status') return sendJson(response, 200, await getOllamaStatus());
   if (method === 'POST' && pathname === '/api/auth/logout') {
     const token = decodeCookie(request.headers.get('cookie') || ''); sessions.delete(token);
     await audit(user.user_id, 'LOGOUT', 'AppUser', user.user_id);
-    return send(response, 204, '', { 'Set-Cookie': `${sessionCookie}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0` });
+    return send(response, 204, '', { 'Set-Cookie': `${sessionCookie}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secureCookie}` });
   }
   if (method === 'GET' && pathname === '/api/users') {
     requireRole(user, ['admin']);
@@ -722,12 +731,15 @@ const mimeTypes = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; char
 const server = http.createServer(async (incoming, response) => {
   try {
     const remote = incoming.socket.remoteAddress || '';
-    if (remote !== '127.0.0.1' && remote !== '::1' && remote !== '::ffff:127.0.0.1') throw httpError(403, 'Server ini hanya menerima koneksi dari perangkat lokal.');
+    if (localOnly && remote !== '127.0.0.1' && remote !== '::1' && remote !== '::ffff:127.0.0.1') throw httpError(403, 'Server ini hanya menerima koneksi dari perangkat lokal.');
+    if (incoming.method === 'GET' && incoming.url === '/livez') return sendJson(response, 200, { status: 'alive' });
+    if (incoming.method === 'GET' && incoming.url === '/readyz') return sendJson(response, databaseReady ? 200 : 503, { status: databaseReady ? 'ready' : 'database_pending' });
     const request = await requestFrom(incoming);
     const origin = request.headers.get('origin');
     if (!['GET','HEAD','OPTIONS'].includes(request.method) && origin) {
       let originUrl; try { originUrl = new URL(origin); } catch { throw httpError(403,'Sumber permintaan tidak valid.'); }
-      if (!['127.0.0.1','localhost','[::1]'].includes(originUrl.hostname) || originUrl.port !== String(port)) throw httpError(403, 'Sumber permintaan tidak diizinkan.');
+      const localOrigin = localOnly && ['127.0.0.1','localhost','[::1]'].includes(originUrl.hostname) && originUrl.port === String(port);
+      if (!localOrigin && !allowedOrigins.has(originUrl.origin)) throw httpError(403, 'Sumber permintaan tidak diizinkan.');
     }
     const url = new URL(request.url);
     if (url.pathname.startsWith('/api/')) return await handleApi(request, response, url);
@@ -755,6 +767,15 @@ server.listen(port, host, () => {
   console.log(`Lentera K3 berjalan di http://${host}:${port}`);
   if (!databaseReady) console.log('Database belum tersambung. Jalankan sql/database.sql melalui SSMS atau sqlcmd, lalu muat ulang aplikasi.');
 });
+
+if (production) {
+  let healthPending = false;
+  setInterval(async () => {
+    if (healthPending) return;
+    healthPending = true;
+    try { await checkDatabaseHealth(); } finally { healthPending = false; }
+  }, 30000).unref();
+}
 
 for (const signal of ['SIGINT','SIGTERM']) process.on(signal, () => {
   annotationJobs.stop(); rigTrainingApi.stop(); performanceMonitor.close();

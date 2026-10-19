@@ -25,3 +25,6 @@ __pycache__/
 *.p12
 .DS_Store
 Thumbs.db
+*.secret.yaml
+*.secret.json
+/deploy/openshift/*.local.*

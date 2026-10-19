@@ -1,0 +1,131 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: inspeksi-rig-runtime
+parameters:
+  - name: IMAGE
+    required: true
+    description: Image digest produced by the successful build in this project.
+  - name: SQL_SERVER
+    required: true
+    description: SQL Server endpoint reachable from the pod, e.g. tcp:sql.internal.example,1433
+  - name: OLLAMA_BASE_URL
+    required: true
+    description: Ollama endpoint reachable from the pod, e.g. http://ollama.ai.svc:11434
+  - name: STORAGE_SIZE
+    value: 10Gi
+objects:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: inspeksi-rig-config
+    data:
+      SQL_SERVER: ${SQL_SERVER}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL}
+      # Override on the Deployment after creating the HTTPS Route, before scaling up.
+      APP_ORIGIN: https://CHANGE_ME.invalid
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: inspeksi-rig-storage
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources:
+        requests:
+          storage: ${STORAGE_SIZE}
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: inspeksi-rig
+    spec:
+      replicas: 0
+      revisionHistoryLimit: 2
+      strategy:
+        type: Recreate
+      selector:
+        matchLabels:
+          app: inspeksi-rig
+      template:
+        metadata:
+          labels:
+            app: inspeksi-rig
+        spec:
+          automountServiceAccountToken: false
+          terminationGracePeriodSeconds: 40
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          initContainers:
+            - name: prepare-storage
+              image: ${IMAGE}
+              command: [node, -e, "const fs=require('fs');for(const p of ['data/private','models'])fs.mkdirSync('/storage/'+p,{recursive:true});"]
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: [ALL]
+              resources:
+                requests: {cpu: 50m, memory: 64Mi}
+                limits: {cpu: 200m, memory: 128Mi}
+              volumeMounts:
+                - name: storage
+                  mountPath: /storage
+          containers:
+            - name: app
+              image: ${IMAGE}
+              ports:
+                - containerPort: 8080
+                  name: http
+              envFrom:
+                - configMapRef:
+                    name: inspeksi-rig-config
+                - secretRef:
+                    name: inspeksi-rig-sql
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: [ALL]
+              startupProbe:
+                httpGet: {path: /livez, port: http}
+                periodSeconds: 10
+                failureThreshold: 180
+              livenessProbe:
+                httpGet: {path: /livez, port: http}
+                periodSeconds: 20
+                timeoutSeconds: 3
+              readinessProbe:
+                httpGet: {path: /readyz, port: http}
+                periodSeconds: 10
+                timeoutSeconds: 3
+              resources:
+                requests: {cpu: 250m, memory: 512Mi}
+                limits: {cpu: '1', memory: 1Gi}
+              volumeMounts:
+                - name: storage
+                  mountPath: /app/data
+                  subPath: data
+                - name: storage
+                  mountPath: /app/models
+                  subPath: models
+                - name: temporary
+                  mountPath: /tmp
+          volumes:
+            - name: storage
+              persistentVolumeClaim:
+                claimName: inspeksi-rig-storage
+            - name: temporary
+              emptyDir:
+                sizeLimit: 512Mi
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: inspeksi-rig
+    spec:
+      selector:
+        app: inspeksi-rig
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http

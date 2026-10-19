@@ -1,5 +1,9 @@
 # Inspeksi Rig Lokal
 
+## Deployment OpenShift perusahaan
+
+Lihat [panduan deployment dari GitHub ke OpenShift](docs/deploy-openshift.md). Gunakan **Dockerfile**, bukan Python S2I. Build image dapat dikerjakan sebelum SQL Server dan Ollama perusahaan tersedia; fungsi inspeksi membutuhkan kedua layanan tersebut dan PVC. Manifest tidak mengunci namespace perusahaan. Paket deployment belum diuji pada cluster tujuan.
+
 Alur terbaru: unggah banyak foto, usulan AI, koreksi kotak, antrean prioritas, dan model rig sebagai pendamping Gemma. Lihat [panduan pembelajaran berbantuan AI](docs/pembelajaran-berbantuan-ai.md).
 
 Aplikasi inspeksi visual berbahasa Indonesia untuk foto rig, menggunakan model visi Ollama pada perangkat lokal dan SQL Server Express.
