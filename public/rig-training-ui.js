@@ -9,7 +9,7 @@
     let destroyed = false, fetching = false, timer = null, selectionVersion = 0, readiness = null, active = null, trainingBusy = false, actionBusy = false, photoUrl = null;
     root.innerHTML = `<section class="card card-pad rig-training-panel" aria-labelledby="rig-training-title">
       <div class="card-title-row"><div><h2 class="card-title" id="rig-training-title">Latih model rig di laptop</h2><p class="card-caption">Foto terverifikasi → pelatihan → evaluasi TEST → percobaan model.</p></div><button class="btn btn-secondary" type="button" data-rig-refresh>Muat ulang</button></div>
-      <p>Pelatihan mengubah bobot detektor YOLO untuk kategori bahaya yang Anda tandai. Model Gemma tetap digunakan pada pemeriksaan biasa. Foto untuk dataset disimpan; foto pada percobaan model di bawah diproses sementara.</p>
+      <p>Model rig belajar dari kotak bahaya terverifikasi. Setelah dipilih, model ini membantu Gemma dan membuat usulan kotak pada foto baru. Foto percobaan di bawah diproses sementara.</p>
       <div class="dt-error" data-rig-error role="alert"></div>
       <form data-rig-train-form class="rig-training-form">
         <label class="inline-label" for="rig-train-dataset">Dataset pelatihan</label><select class="select-field" id="rig-train-dataset" name="dataset_id" required><option value="">Pilih dataset…</option></select>
@@ -20,7 +20,7 @@
       </form>
       <h3>Riwayat pelatihan dan hasil TEST</h3><div data-rig-jobs></div>
       <h3 id="rig-scan-title">Coba detektor pada foto</h3><p data-rig-active class="hint-text">Belum ada model terlatih yang dipilih.</p>
-      <form data-rig-scan-form><label class="inline-label" for="rig-scan-model">Model untuk pemeriksaan</label><select class="select-field" id="rig-scan-model" name="scan_model"><option value="rig">Model rig · kategori bahaya hasil pelatihan</option></select><label class="inline-label" for="rig-scan-photo">Foto yang ingin diperiksa</label><input class="field" id="rig-scan-photo" name="image" type="file" accept="image/jpeg,image/png,image/webp" required><p class="hint-text">JPG, PNG, WebP · maksimal 8 MB. Foto dikirim sementara untuk analisis; tidak disimpan di server atau menjadi dataset.</p><button class="btn btn-primary" type="submit" disabled>Periksa dengan model rig</button></form>
+      <form data-rig-scan-form><label class="inline-label" for="rig-scan-photo">Foto yang ingin diperiksa</label><input class="field" id="rig-scan-photo" name="image" type="file" accept="image/jpeg,image/png,image/webp" required><p class="hint-text">JPG, PNG, WebP · maksimal 8 MB. Foto dikirim sementara untuk analisis; tidak disimpan di server atau menjadi dataset.</p><button class="btn btn-primary" type="submit" disabled>Periksa dengan model rig</button></form>
       <div data-rig-scan-result role="status"></div><div class="rig-scan-frame is-hidden" data-rig-scan-frame><img alt="Foto percobaan detektor lokal"><div data-rig-scan-boxes></div></div>
     </section>`;
     const datasetSelect = root.querySelector('#rig-train-dataset');
@@ -73,7 +73,7 @@
             ${running ? `<progress max="${job.epochs}" value="${progress.epoch || 0}"></progress><p>Epoch ${progress.epoch || 0}/${job.epochs}${progress.total ? ` · TEST ${progress.completed || 0}/${progress.total}` : ''}</p><button class="btn btn-secondary" type="button" data-rig-cancel="${job.id}">Hentikan pelatihan</button>` : ''}
             ${job.error ? `<p class="dt-error">${esc(job.error)}</p>` : ''}
             ${job.status === 'COMPLETED' ? metricsHtml(job) : ''}
-            ${job.status === 'COMPLETED' && user.role === 'admin' && !job.active ? `<label class="dt-consent"><input type="checkbox" data-rig-review="${job.id}"><span>Saya sudah meninjau hasil TEST dan memilih kandidat ini untuk percobaan lokal.</span></label><button class="btn btn-secondary" type="button" data-rig-activate="${job.id}" disabled>Gunakan untuk percobaan lokal</button>` : ''}
+            ${job.status === 'COMPLETED' && user.role === 'admin' && !job.active ? `<label class="dt-consent"><input type="checkbox" data-rig-review="${job.id}"><span>Saya sudah meninjau hasil TEST dan memilih kandidat ini untuk percobaan lokal.</span></label><button class="btn btn-secondary" type="button" data-rig-activate="${job.id}" disabled>Gunakan sebagai pendamping Gemma</button>` : ''}
           </article>`;
         }).join('') : '<p class="hint-text">Belum ada pelatihan. Foto perlu dilabeli dan diverifikasi terlebih dahulu.</p>';
         updateButtons();
@@ -106,7 +106,7 @@
       event.preventDefault();
       if (actionBusy || trainingBusy || !active || !photoUrl) return;
       actionBusy = true; error(''); updateButtons(); scanForm.elements.image.disabled = true;
-      scanForm.elements.scan_model.disabled = true;
+
       const result = root.querySelector('[data-rig-scan-result]'); result.textContent = 'Model rig sedang memeriksa foto…';
       try {
         const body = new FormData(); body.append('image', scanForm.elements.image.files[0]);
@@ -115,7 +115,7 @@
         result.innerHTML = `<p><strong>${esc(data.summary)}</strong></p><p>${esc(data.model_name)} · ${(data.latency_ms / 1000).toFixed(2)} detik · foto tidak disimpan di server.</p>${data.detections.length ? `<ul>${data.detections.map(row => `<li>${esc(row.display_name || row.class_name)} · skor deteksi ${percent(row.confidence)}</li>`).join('')}</ul>` : ''}${data.review_questions?.length ? `<p><strong>Periksa secara manual</strong></p><ul>${data.review_questions.map(text => `<li>${esc(text)}</li>`).join('')}</ul>` : ''}`;
         root.querySelector('[data-rig-scan-boxes]').innerHTML = data.detections.map(row => `<span class="rig-scan-box" style="left:${row.box.x * 100}%;top:${row.box.y * 100}%;width:${row.box.width * 100}%;height:${row.box.height * 100}%"><span>${esc(row.display_name || row.class_name)}</span></span>`).join('');
       } catch (err) { if (!destroyed) { result.textContent = ''; error(err.message); } }
-      finally { actionBusy = false; if (!destroyed) { scanForm.elements.image.disabled = false; scanForm.elements.scan_model.disabled = false; updateButtons(); } }
+      finally { actionBusy = false; if (!destroyed) { scanForm.elements.image.disabled = false;  updateButtons(); } }
     }
     async function click(event) {
       const button = event.target.closest('button'); if (!button || destroyed) return;
@@ -135,7 +135,7 @@
       if (event.target === datasetSelect) checkReadiness();
       else if (event.target.dataset.rigReview) root.querySelector(`[data-rig-activate="${event.target.dataset.rigReview}"]`).disabled = !event.target.checked || actionBusy || trainingBusy;
       else if (event.target === scanForm.elements.image) photoChanged();
-      else if (event.target === scanForm.elements.scan_model) { root.querySelector('[data-rig-scan-result]').textContent = ''; root.querySelector('[data-rig-scan-boxes]').innerHTML = ''; updateButtons(); }
+
     }
     trainForm.addEventListener('submit', train); scanForm.addEventListener('submit', scan); root.addEventListener('click', click); root.addEventListener('change', change);
     refreshJobs();

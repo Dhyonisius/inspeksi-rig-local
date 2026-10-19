@@ -1,5 +1,7 @@
 # Inspeksi Rig Lokal
 
+Alur terbaru: unggah banyak foto, usulan AI, koreksi kotak, antrean prioritas, dan model rig sebagai pendamping Gemma. Lihat [panduan pembelajaran berbantuan AI](docs/pembelajaran-berbantuan-ai.md).
+
 Aplikasi inspeksi visual berbahasa Indonesia untuk foto rig, menggunakan model visi Ollama pada perangkat lokal dan SQL Server Express.
 
 ## Fitur
@@ -9,6 +11,7 @@ Aplikasi inspeksi visual berbahasa Indonesia untuk foto rig, menggunakan model v
 - Impor foto PDF privat, kurasi, anotasi kotak, dan verifikasi contoh rig.
 - Pemisahan kelompok foto untuk TRAIN, VALIDATION, dan TEST.
 - Pelatihan, evaluasi, dan percobaan detektor bahaya rig lokal.
+- Usulan label, deskripsi, dan kotak dari AI untuk foto calon pelatihan yang belum ditinjau.
 - Autentikasi pengguna/admin dan penghapusan data dengan konfirmasi.
 
 ## Menjalankan pada laptop asal
@@ -26,6 +29,12 @@ Buka alamat localhost yang dicetak dan biarkan terminal tetap terbuka. Peluncur 
 Sediakan Node.js, Python dengan dependensi yang digunakan skrip, SQLCMD, SQL Server Express dengan Windows Authentication, dan Ollama dengan model visi. Atur variabel lingkungan `PYTHON_EXE`, `SQLCMD_EXE`, `SQL_SERVER`, serta `PORT` sesuai instalasi, lalu jalankan `node server.js`. Server menjalankan migrasi SQL saat startup. Pelatihan detektor memerlukan lingkungan Python tersendiri yang ditunjuk `RIG_TRAINING_PYTHON_EXE` dan model awal lokal; paket model tidak disertakan.
 
 Repository hanya memuat kode, skema database dan aset UI. Foto inspeksi, PDF privat, isi database, hasil anotasi/evaluasi, model AI, log, dan backup tidak disertakan. Salinan baru tidak memiliki dataset atau riwayat laptop asal. Font dan ikon menyertakan lisensi sumbernya pada `public/ads`.
+
+## Membuat usulan label AI
+
+Pada **Belajar dari foto**, buka **Periksa foto** untuk calon pelatihan yang belum ditinjau pada dataset Draft. Pilih area lalu tekan **Buat usulan AI**. Ollama lokal dengan model vision harus tersedia; proses dapat memerlukan hingga tiga menit. Usulan disimpan terpisah dari label manusia pada `data/private/rig-pdf/ai-drafts`.
+
+Tekan **Terapkan usulan** untuk mengisi label, deskripsi, dan kotak di formulir. Tindakan ini mengganti isian formulir saat ini. Periksa foto, koreksi deskripsi atau label, dan hapus/gambar ulang kotak yang keliru sebelum menyimpan. Jika area berubah, buat usulan baru untuk area tersebut. Simpan hasil tinjauan lalu verifikasi melalui alur yang sudah tersedia. Membuat atau menerapkan usulan tidak memverifikasi label dan tidak melatih model. Jika AI tidak tersedia, formulir tetap dapat diisi manual.
 
 ## Batasan
 

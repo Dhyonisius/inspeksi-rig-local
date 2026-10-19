@@ -105,6 +105,12 @@ COMMIT TRANSACTION; SELECT @item AS dataset_item_id,@new AS new_image,@locked AS
   if(url.pathname==='/api/rig-pdf/import' && request.method==='POST') {
    admin(user); if(!importPromise) void importPrepared(user); sendJson(response,202,{...state});return true;
   }
+  if(request.method==='POST' && (match=url.pathname.match(/^\/api\/dataset-items\/(\d+)\/ai-proposal$/))) {
+   allowed(user); const id=intValue(match[1],'Foto dataset'),body=await bodyObject(request);
+   if(!ctx.annotationLearning)throw httpError(503,'Mulai ulang aplikasi untuk mengaktifkan usulan AI.');
+   const aiDraft=await ctx.annotationLearning.suggest(id,user,body);
+   sendJson(response,200,{ai_draft:aiDraft,label_saved:false,verified:false});return true;
+  }
   if((match=url.pathname.match(/^\/api\/dataset-items\/(\d+)\/training-review$/))) {
    allowed(user); const id=intValue(match[1],'Foto dataset');
    if(request.method==='GET') {
@@ -126,7 +132,7 @@ SELECT payload FROM @chunks ORDER BY sequence_id;`;
 
     if(!row) { const exists=await jsonQuery(`SELECT dataset_item_id FROM dbo.DatasetItem WHERE dataset_item_id=${id} FOR JSON PATH,WITHOUT_ARRAY_WRAPPER;`); if(exists) throw httpError(503,'Foto masih tersimpan, tetapi detailnya belum dapat dibaca.','DATABASE_RESPONSE'); throw httpError(404,'Foto dataset tidak ditemukan.'); }
     const annotations=await jsonQuery(`SELECT hazard_type_id,bbox_x AS x,bbox_y AS y,bbox_width AS width,bbox_height AS height FROM dbo.Annotation WHERE dataset_item_id=${id} FOR JSON PATH;`)||[];
-    const proposal = /^[a-f0-9]{64}$/.test(row.checksum || '') ? await draftFile(row.checksum+'.json') : null;
+    const proposal = await ctx.annotationLearning?.getProposal(id,row) || (/^[a-f0-9]{64}$/.test(row.checksum || '') ? await draftFile(row.checksum+'.json') : null);
     const aiDraft = proposal?.image_checksum===row.checksum && proposal?.human_reviewed===false && labels.includes(proposal.overall_label) ? proposal : null;
     const areas=await jsonQuery("SELECT work_area_id,name FROM dbo.WorkArea WHERE is_active=1 AND scope_key='CRSSC-20261005' FOR JSON PATH;")||[];
     const pdfPrefill=await reviewDefaults(row,areas,aiDraft);

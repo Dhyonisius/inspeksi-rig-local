@@ -11,7 +11,9 @@ export function createLearningApi(ctx) {
   const joins=`FROM dbo.DatasetItem di JOIN dbo.Dataset d ON d.dataset_id=di.dataset_id
     JOIN dbo.ImageAsset ia ON ia.image_id=di.image_id
     LEFT JOIN dbo.DatasetTrainingReview r ON r.dataset_item_id=di.dataset_item_id
-    LEFT JOIN dbo.WorkArea wa ON wa.work_area_id=COALESCE(r.work_area_id,ia.work_area_id)`;
+    LEFT JOIN dbo.DatasetAiProposal ai ON ai.dataset_item_id=di.dataset_item_id AND ai.image_checksum=ia.checksum
+      AND ai.work_area_id=COALESCE(r.work_area_id,ia.work_area_id,ai.work_area_id)
+    LEFT JOIN dbo.WorkArea wa ON wa.work_area_id=COALESCE(r.work_area_id,ia.work_area_id,ai.work_area_id)`;
   const scope=`d.dataset_kind='HAZARD' AND d.status<>'ARCHIVED' AND di.is_excluded=0`;
   return async function handle(request,response,url,user) {
     if(url.pathname==='/api/learning' && request.method==='GET') {
@@ -19,6 +21,13 @@ export function createLearningApi(ctx) {
       const status=url.searchParams.get('status')||'pending';
       const filters={pending:"di.label_status='DRAFT'",reviewed:"di.label_status='REVIEWED'",verified:"di.label_status='VERIFIED'"};
       if(!filters[status]) throw httpError(400,'Antrean tidak dikenal.');
+      const search=String(url.searchParams.get('q')||'').trim().slice(0,120);
+      const areaId=url.searchParams.get('area')?intValue(url.searchParams.get('area'),'Area'):null;
+      const filter=filters[status]+(search?` AND (CHARINDEX(${sqlText(search)},ia.original_name)>0 OR CHARINDEX(${sqlText(search)},d.name)>0)`:'')+(areaId?` AND wa.work_area_id=${areaId}`:'');
+      const sort=url.searchParams.get('sort')||'priority';
+      if(!['priority','newest'].includes(sort))throw httpError(400,'Urutan antrean tidak tersedia.');
+      const priority=`COALESCE(ai.priority,40)+CASE WHEN NOT EXISTS(SELECT 1 FROM dbo.DatasetItem known JOIN dbo.ImageAsset ki ON ki.image_id=known.image_id LEFT JOIN dbo.DatasetTrainingReview kr ON kr.dataset_item_id=known.dataset_item_id WHERE known.label_status='VERIFIED' AND known.is_excluded=0 AND known.split='TRAIN' AND COALESCE(kr.work_area_id,ki.work_area_id)=wa.work_area_id) THEN 10 ELSE 0 END`;
+      const ordering=sort==='newest'?'di.dataset_item_id DESC':`${priority} DESC,ROW_NUMBER() OVER(PARTITION BY COALESCE(r.source_group_key,'item:'+CONVERT(varchar(20),di.dataset_item_id)) ORDER BY di.dataset_item_id),di.dataset_item_id`;
       const stats=await jsonQuery(`SELECT COUNT(*) AS total,
         COALESCE(SUM(CASE WHEN di.label_status='DRAFT' THEN 1 ELSE 0 END),0) AS pending,
         COALESCE(SUM(CASE WHEN di.label_status='REVIEWED' THEN 1 ELSE 0 END),0) AS reviewed,
@@ -26,11 +35,14 @@ export function createLearningApi(ctx) {
         COALESCE(SUM(CASE WHEN di.label_status='VERIFIED' AND di.split='TRAIN' AND ia.license_verified=1
           AND wa.is_active=1 AND di.overall_label<>'UNCERTAIN' AND COALESCE(r.curated_description,'')<>'' THEN 1 ELSE 0 END),0) AS example_count
         ${joins} WHERE ${scope} FOR JSON PATH,WITHOUT_ARRAY_WRAPPER;`);
-      const count=await jsonQuery(`SELECT COUNT(*) AS total ${joins} WHERE ${scope} AND ${filters[status]} FOR JSON PATH,WITHOUT_ARRAY_WRAPPER;`);
+      const count=await jsonQuery(`SELECT COUNT(*) AS total ${joins} WHERE ${scope} AND ${filter} FOR JSON PATH,WITHOUT_ARRAY_WRAPPER;`);
       const items=await jsonQuery(`SELECT di.dataset_item_id,di.dataset_id,di.image_id,di.label_status,di.overall_label,di.split,
-        d.name AS dataset_name,d.status AS dataset_status,ia.original_name,wa.name AS area_name,
+        d.name AS dataset_name,d.status AS dataset_status,ia.original_name,wa.name AS area_name,wa.work_area_id,
+        ai.method AS proposal_method,JSON_VALUE(ai.proposal_json,'$.overall_label') AS proposal_label,
+        JSON_QUERY(ai.proposal_json,'$.priority_reasons') AS priority_reasons,${priority} AS review_priority,
+        CAST(CASE WHEN ai.dataset_item_id IS NULL THEN 0 ELSE 1 END AS BIT) AS has_proposal,
         CAST(CASE WHEN r.reviewed_at IS NULL THEN 1 ELSE 0 END AS BIT) AS needs_review
-        ${joins} WHERE ${scope} AND ${filters[status]} ORDER BY di.dataset_item_id
+        ${joins} WHERE ${scope} AND ${filter} ORDER BY ${ordering}
         OFFSET ${offset} ROWS FETCH NEXT 24 ROWS ONLY FOR JSON PATH;`)||[];
       const datasets=await jsonQuery(`SELECT d.dataset_id,d.name,d.version,d.status,COUNT(di.dataset_item_id) AS total,
         COALESCE(SUM(CASE WHEN di.label_status='VERIFIED' AND ia.license_verified=1 THEN 1 ELSE 0 END),0) AS verified,
@@ -40,7 +52,7 @@ export function createLearningApi(ctx) {
         FROM dbo.Dataset d LEFT JOIN dbo.DatasetItem di ON di.dataset_id=d.dataset_id AND di.is_excluded=0 LEFT JOIN dbo.ImageAsset ia ON ia.image_id=di.image_id
         WHERE d.dataset_kind='HAZARD' AND d.status<>'ARCHIVED' GROUP BY d.dataset_id,d.name,d.version,d.status ORDER BY d.dataset_id DESC FOR JSON PATH;`)||[];
       sendJson(response,200,{stats,items,total:count?.total||0,offset,status,datasets,
-        learning_method:'VERIFIED_VISUAL_EXAMPLES',weights_trained:false}); return true;
+        rig_model:ctx.rigModelStatus?.()||{available:false},learning_method:'VERIFIED_VISUAL_EXAMPLES',weights_trained:false}); return true;
     }
     if(url.pathname==='/api/learning/photos' && request.method==='POST') {
       permitted(user);

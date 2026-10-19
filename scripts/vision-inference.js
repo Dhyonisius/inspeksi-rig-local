@@ -74,7 +74,9 @@ export function createVisionAnalyzer({ baseUrl, listModels, prepareImage, monito
       let status = parsed.status;
       if (status === 'POTENSI_TIDAK_AMAN' && !findings.length || status === 'TIDAK_TAMPAK_BAHAYA' && findings.length) status = 'TIDAK_PASTI';
       outcome = 'ok';
-      return { model_name: model.name, status, summary: String(parsed.summary || '').trim().slice(0, 1200), findings, raw_json: JSON.stringify({...parsed,learning_context:{method:'VERIFIED_VISUAL_EXAMPLES',weights_trained:false,examples:referenceData}}).slice(0, 24000),
+      return { model_name: model.name, status, summary: String(parsed.summary || '').trim().slice(0, 1200), findings, raw_json: JSON.stringify({...parsed,
+        detector_context:options.detector?.enabled ? {model:options.detector.model_name,detections:objectContext} : null,
+        learning_context:{method:'VERIFIED_VISUAL_EXAMPLES',weights_trained:false,examples:referenceData}}).slice(0, 24000),
         performance: { profile: settings.name, inference_ms: Math.round(performance.now() - started), image: { width: prepared.width, height: prepared.height },
           generated_tokens: Number(result.eval_count || 0), model_load_ms: Math.round(Number(result.load_duration || 0) / 1e6) } };
     } catch (error) { if (options.signal?.aborted || error.name === 'AbortError') outcome = 'cancelled'; throw error; }

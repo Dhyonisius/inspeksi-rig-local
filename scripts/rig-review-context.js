@@ -35,8 +35,8 @@ export function createRigReviewContext({ privateDir }) {
     const areaIds = new Set(candidates.map(row => row.work_area_id));
     const workAreaId = areaIds.size === 1 && !areaIds.has(null) ? candidates[0].work_area_id : null;
     const ai = typeof aiDraft?.description === 'string' ? { model: aiDraft.model || 'AI lokal', description: aiDraft.description.slice(0, 600) } : null;
-    const pdfText = distinct.slice(0, 5).map(row => `${row.area_name} — ${row.name}${row.frequency ? ` [${row.frequency}]` : ''}${row.time ? ` · ${row.time}` : ''} (Rig ${row.rig_name}, halaman ${row.page})`).join('\n');
-    const description = `PDF:\n${pdfText.slice(0, ai ? 570 : 1120)}${distinct.length > 5 ? '\nAda konteks PDF lain; pilih sumber yang sesuai.' : ''}${ai ? `\n\nAI (${ai.model}) — perlu crosscheck:\n${ai.description}` : ''}`.slice(0, 1200);
+    const pdfText = [...new Set(distinct.slice(0, 5).map(row => row.name.trim()).filter(Boolean))].join('\n');
+    const description = [pdfText.slice(0, ai ? 570 : 1120), ai?.description].filter(Boolean).join('\n').slice(0, 1200);
     return { source: 'PDF_AND_EXISTING_AI', work_area_id: workAreaId, description,
       candidates: distinct.slice(0, 80), ai, ambiguous: distinct.length > 1, human_reviewed: false,
       note: distinct.length > 1 ? 'Foto ini memiliki beberapa item checklist asal. Pilih konteks PDF yang sesuai dan periksa isian sebelum menyimpan.'

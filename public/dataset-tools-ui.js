@@ -5,6 +5,21 @@
   const date = value => value ? new Date(/[zZ]|[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`).toLocaleString('id-ID') : '—';
   const post = body => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   let activeImport;
+  const pdfDescription = (candidates, ai) => [...new Set((candidates || []).map(candidate => String(candidate.name || '').trim()).filter(Boolean)), ai?.description?.trim()].filter(Boolean).join('\n').slice(0, 1200);
+  function reviewDescription(value) {
+    const text = String(value || '');
+    // Only simplify the generated PDF template; keep free-form reviewer notes intact.
+    if (!/^PDF:\s*\r?\n/.test(text)) return text;
+    const body = text.replace(/^PDF:\s*\r?\n/, '');
+    const aiHeader = /\r?\n\s*\r?\nAI \([^\r\n]+\) — perlu crosscheck:\s*\r?\n/.exec(body);
+    const pdf = aiHeader ? body.slice(0, aiHeader.index) : body;
+    const ai = aiHeader ? body.slice(aiHeader.index + aiHeader[0].length).trim() : '';
+    const names = pdf.split(/\r?\n/).map(line => {
+      const source = line.match(/^.+? — (.+?)(?: \[[^\]]+\])?(?: · [^\r\n()]+)? \(Rig [^\r\n]+, halaman \d+\)$/);
+      return source ? source[1].trim() : line.trim();
+    }).filter(line => line && line !== 'Ada konteks PDF lain; pilih sumber yang sesuai.');
+    return [...new Set(names), ai].filter(Boolean).join('\n').slice(0, 1200);
+  }
   async function openImport({ analysisId, datasetItemId, api, onSaved = () => {} }) {
     activeImport?.close();
     const dialog = document.createElement('dialog'); dialog.className = 'dt-dialog'; activeImport = dialog;
@@ -24,12 +39,13 @@
       const predicted = detail.feedback?.corrected_label || detail.prediction?.predicted_status;
       const defaultLabel = proposal?.overall_label || detail.item?.overall_label || (['TIDAK_AMAN', 'POTENSI_TIDAK_AMAN'].includes(predicted) ? 'RISK' : predicted === 'TIDAK_TAMPAK_BAHAYA' ? 'NO_LISTED_HAZARD_VISIBLE' : 'UNCERTAIN');
       const pdfPrefill = datasetItemId && !detail.item.reviewed_at && !detail.item.curated_description ? detail.pdf_prefill : null;
-      const initialArea = Number(detail.item?.review_work_area_id || detail.item?.image_work_area_id || pdfPrefill?.work_area_id);
-      const initialDescription = detail.feedback?.notes || detail.item?.curated_description || detail.prediction?.summary || pdfPrefill?.description || proposal?.description || '';
-      dialog.innerHTML = `<form data-import-form><header><div><p class="eyebrow">KURASI CONTOH</p><h2 id="dt-import-title">Koreksi menjadi contoh berlabel</h2><p>Periksa foto, tulis deskripsi, lalu tandai bagian yang berbahaya.</p></div></header><div class="dt-body"><section><div class="dt-preview"><img alt="Foto sumber untuk anotasi" src="/api/media/${Number(detail.analysis.image_id)}"><canvas aria-label="Tarik pada gambar untuk menandai bahaya"></canvas></div><p class="dt-muted">Pilih kategori di kanan, lalu tarik kotak pada bagian berbahaya. Kotak hanya anotasi Anda.</p><div class="dt-boxes"></div><div class="dt-notice">Label hasil AI dan koreksi pengguna ikut dicatat sebagai sumber. Foto ini baru masuk dataset setelah Anda menyimpan.</div></section><section class="dt-fields"><label for="dt-dataset">Dataset tujuan</label><select class="select-field" name="dataset_id" id="dt-dataset" required>${datasets.length ? datasets.map(d => `<option value="${d.dataset_id}">${esc(d.name)} · ${esc(d.version)}</option>`).join('') : '<option value="">Buat dataset DRAFT melalui Dataset foto</option>'}</select>${datasetItemId ? `<label for="dt-area">Area / peralatan yang difoto</label><select class="select-field" name="work_area_id" id="dt-area" required><option value="">Pilih area…</option>${areaData.areas.map(a=>`<option value="${a.work_area_id}" ${initialArea===Number(a.work_area_id)?'selected':''}>${esc(a.name)}</option>`).join('')}</select>` : ''}<label for="dt-label">Label yang benar</label><select class="select-field" name="overall_label" id="dt-label">${['RISK', 'NO_LISTED_HAZARD_VISIBLE', 'UNCERTAIN'].map(v => `<option value="${v}" ${v === defaultLabel ? 'selected' : ''}>${label(v)}</option>`).join('')}</select><label for="dt-split">Pembagian data</label><select class="select-field" name="split" id="dt-split"><option value="TRAIN">TRAIN · contoh pengembangan</option><option value="VALIDATION">VALIDATION · penyesuaian</option><option value="TEST">TEST · evaluasi terpisah</option></select><p class="dt-muted">Foto dari satu sesi kamera harus masuk pembagian yang sama pada dataset ini.</p><label for="dt-hazard">Kategori untuk kotak berikutnya</label><select class="select-field" id="dt-hazard"><option value="">Pilih kategori bahaya…</option>${hazards.map(h => `<option value="${h.hazard_type_id}">${esc(h.name)}</option>`).join('')}</select><label for="dt-description">Deskripsi yang telah diperiksa</label><textarea class="textarea-field" name="description" id="dt-description" rows="4" maxlength="1200" required placeholder="Jelaskan yang benar-benar tampak dalam foto">${esc(initialDescription)}</textarea><label class="dt-consent"><input name="license_confirmed" type="checkbox" required><span>Saya berwenang memakai foto ini untuk dataset internal dan sudah memeriksa isi serta labelnya.</span></label><div class="dt-error" role="alert"></div></section></div><footer><button class="btn btn-secondary" type="button" data-cancel>Batal</button><button class="btn btn-primary" type="submit" ${datasets.length ? '' : 'disabled'}>Simpan ke dataset</button></footer></form>`;
+      const initialArea = Number(detail.item?.review_work_area_id || detail.item?.image_work_area_id || proposal?.work_area_id || pdfPrefill?.work_area_id);
+      const initialDescription = reviewDescription(detail.feedback?.notes || detail.item?.curated_description || detail.prediction?.summary || (pdfPrefill ? pdfDescription(pdfPrefill.candidates?.slice(0, 5), pdfPrefill.ai) : '') || proposal?.description || '');
+      dialog.innerHTML = `<form data-import-form><header><div><p class="eyebrow">KURASI CONTOH</p><h2 id="dt-import-title">Koreksi menjadi contoh berlabel</h2><p>Periksa foto, tulis deskripsi, lalu tandai bagian yang berbahaya.</p></div></header><div class="dt-body"><section><div class="dt-preview"><img alt="Foto sumber untuk anotasi" src="/api/media/${Number(detail.analysis.image_id)}"><canvas aria-label="Tarik pada gambar untuk menandai bahaya"></canvas></div><p class="dt-muted">Periksa posisi dan kategori tiap kotak. Gunakan Gambar kotak untuk menambah penanda.</p><div class="dt-boxes"></div><div class="dt-notice">Label hasil AI dan koreksi pengguna ikut dicatat sebagai sumber. Foto ini baru masuk dataset setelah Anda menyimpan.</div></section><section class="dt-fields"><label for="dt-dataset">Dataset tujuan</label><select class="select-field" name="dataset_id" id="dt-dataset" required>${datasets.length ? datasets.map(d => `<option value="${d.dataset_id}">${esc(d.name)} · ${esc(d.version)}</option>`).join('') : '<option value="">Buat dataset DRAFT melalui Dataset foto</option>'}</select>${datasetItemId ? `<label for="dt-area">Area / peralatan yang difoto</label><select class="select-field" name="work_area_id" id="dt-area" required><option value="">Pilih area…</option>${areaData.areas.map(a=>`<option value="${a.work_area_id}" ${initialArea===Number(a.work_area_id)?'selected':''}>${esc(a.name)}</option>`).join('')}</select>` : ''}<label for="dt-label">Label yang benar</label><select class="select-field" name="overall_label" id="dt-label">${['RISK', 'NO_LISTED_HAZARD_VISIBLE', 'UNCERTAIN'].map(v => `<option value="${v}" ${v === defaultLabel ? 'selected' : ''}>${label(v)}</option>`).join('')}</select><label for="dt-split">Pembagian data</label><select class="select-field" name="split" id="dt-split"><option value="TRAIN">TRAIN · contoh pengembangan</option><option value="VALIDATION">VALIDATION · penyesuaian</option><option value="TEST">TEST · evaluasi terpisah</option></select><p class="dt-muted">Foto dari satu sesi kamera harus masuk pembagian yang sama pada dataset ini.</p><label for="dt-hazard">Kategori untuk kotak berikutnya</label><select class="select-field" id="dt-hazard"><option value="">Pilih kategori bahaya…</option>${hazards.map(h => `<option value="${h.hazard_type_id}">${esc(h.name)}</option>`).join('')}</select><label for="dt-description">Deskripsi yang telah diperiksa</label><textarea class="textarea-field" name="description" id="dt-description" rows="4" maxlength="1200" required placeholder="Jelaskan yang benar-benar tampak dalam foto">${esc(initialDescription)}</textarea><label class="dt-consent"><input name="license_confirmed" type="checkbox" required><span>Saya berwenang memakai foto ini untuk dataset internal dan sudah memeriksa isi serta labelnya.</span></label><div class="dt-error" role="alert"></div></section></div><footer><button class="btn btn-secondary" type="button" data-cancel>Batal</button><button class="btn btn-primary" type="submit" ${datasets.length ? '' : 'disabled'}>Simpan ke dataset</button></footer></form>`;
       const img = dialog.querySelector('img'), canvas = dialog.querySelector('canvas'), context = canvas.getContext('2d');
       const boxes = (detail.annotations?.length ? detail.annotations : proposal?.annotations || []).map(box => ({ ...box })); let start, draft;
       const submit = dialog.querySelector('[type=submit]'); submit.disabled = true;
+      let editor = null;
       function areaHazards() {
         const type=datasetItemId ? areaData.areas.find(a=>a.work_area_id===Number(dialog.querySelector('#dt-area').value))?.area_type : detail.analysis.area_type;
         return hazards.filter(h=>!type || h.area_type===type || h.area_type==='KEDUANYA');
@@ -38,6 +54,7 @@
         const select=dialog.querySelector('#dt-hazard'),old=select.value;
         select.innerHTML='<option value="">Pilih kategori bahaya…</option>'+areaHazards().map(h=>`<option value="${h.hazard_type_id}">${esc(h.name)}</option>`).join('');
         if(areaHazards().some(h=>String(h.hazard_type_id)===old))select.value=old;
+        editor?.refresh();
       }
       dialog.querySelector('#dt-area')?.addEventListener('change',updateHazards); updateHazards();
       if (pdfPrefill) {
@@ -48,20 +65,26 @@
           if (event.target.value === '' || busy) return;
           const candidate = pdfPrefill.candidates[Number(event.target.value)]; if (!candidate) return;
           if (candidate.work_area_id) dialog.querySelector('#dt-area').value = String(candidate.work_area_id);
-          const pdfText = `${candidate.area_name} — ${candidate.name}${candidate.frequency ? ` [${candidate.frequency}]` : ''}${candidate.time ? ` · ${candidate.time}` : ''} (Rig ${candidate.rig_name}, halaman ${candidate.page})`;
-          dialog.querySelector('#dt-description').value = `PDF:\n${pdfText}${pdfPrefill.ai ? `\n\nAI (${pdfPrefill.ai.model}) — perlu crosscheck:\n${pdfPrefill.ai.description}` : ''}`.slice(0, 1200);
+          dialog.querySelector('#dt-description').value = pdfDescription([candidate], pdfPrefill.ai);
           updateHazards();
         });
       }
 
       function photoReady() { return img.naturalWidth > 0 && img.naturalHeight > 0; }
-      function loaded() { draw(); submit.disabled = !datasets.length || !photoReady(); }
+      function loaded() { draw(); submit.disabled = busy || !datasets.length || !photoReady(); }
       function draw() {
         canvas.width = img.naturalWidth || 1; canvas.height = img.naturalHeight || 1;
         context.clearRect(0, 0, canvas.width, canvas.height); context.lineWidth = Math.max(2, canvas.width / 350); context.strokeStyle = '#3c6db2'; context.fillStyle = '#3c6db220';
-        [...boxes, ...(draft ? [draft] : [])].forEach(box => { context.fillRect(box.x * canvas.width, box.y * canvas.height, box.width * canvas.width, box.height * canvas.height); context.strokeRect(box.x * canvas.width, box.y * canvas.height, box.width * canvas.width, box.height * canvas.height); });
+        [...boxes, ...(draft ? [draft] : [])].forEach((box,index) => {
+          context.fillRect(box.x * canvas.width, box.y * canvas.height, box.width * canvas.width, box.height * canvas.height);
+          context.strokeRect(box.x * canvas.width, box.y * canvas.height, box.width * canvas.width, box.height * canvas.height);
+          const size=Math.max(14,canvas.width/45);context.font=`bold ${size}px sans-serif`;context.fillStyle='#244d83';
+          context.fillText(String(index+1),box.x*canvas.width+5,Math.max(size,box.y*canvas.height-5));
+          if(editor?.selectedIndex()===index)context.fillRect((box.x+box.width)*canvas.width-6,(box.y+box.height)*canvas.height-6,12,12);
+          context.fillStyle='#3c6db220';
+        });
       }
-      function tags() { dialog.querySelector('.dt-boxes').innerHTML = boxes.map((box, i) => `<button type="button" data-remove="${i}" aria-label="Hapus kotak ${i + 1}">${i + 1}. ${esc(hazards.find(h => Number(h.hazard_type_id) === box.hazard_type_id)?.name || 'Bahaya')} ×</button>`).join(''); }
+      function tags() { if(editor){editor.refresh();return;} dialog.querySelector('.dt-boxes').innerHTML = boxes.map((box, i) => `<button type="button" data-remove="${i}" aria-label="Hapus kotak ${i + 1}">${i + 1}. ${esc(hazards.find(h => Number(h.hazard_type_id) === box.hazard_type_id)?.name || 'Bahaya')} ×</button>`).join(''); }
       function point(e) { const r = canvas.getBoundingClientRect(); return { x: Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), y: Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)) }; }
       function rect(a, b) { return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), width: Math.abs(a.x - b.x), height: Math.abs(a.y - b.y) }; }
       img.addEventListener('load', loaded);
@@ -72,6 +95,52 @@
       canvas.addEventListener('pointerup', e => { if (!start) return; const box = rect(start, point(e)); if (box.width > .008 && box.height > .008) boxes.push({ ...box, hazard_type_id: start.hazard }); start = null; draft = null; draw(); tags(); });
       canvas.addEventListener('pointercancel', () => { start = null; draft = null; draw(); });
       dialog.addEventListener('click', e => { const b = e.target.closest('[data-remove]'); if (b && !busy) { boxes.splice(Number(b.dataset.remove), 1); draw(); tags(); } });
+      editor = window.AnnotationEditorUI?.attach({container:dialog.querySelector('.dt-boxes'),canvas,boxes,draw,isBusy:()=>busy,getHazards:areaHazards});
+      if (datasetItemId && detail.item.dataset_status === 'DRAFT' && detail.item.label_status === 'DRAFT' && !detail.item.reviewed_at && !proposal) {
+        const panel = document.createElement('div'); panel.className = 'dt-notice';
+        panel.innerHTML = '<strong>Bantuan label dari AI</strong><p>Pilih area foto, lalu minta AI mengusulkan label, deskripsi, dan kotak bahaya.</p><button type="button" class="btn btn-secondary" data-generate-proposal>Buat usulan AI</button><p data-proposal-status role="status" aria-live="polite"></p><button type="button" class="btn btn-secondary is-hidden" data-apply-proposal>Terapkan usulan</button><p class="dt-muted">Menerapkan usulan mengganti label, deskripsi, dan kotak di formulir ini. Periksa dan koreksi sebelum menyimpan.</p>';
+        dialog.querySelector('.dt-fields').prepend(panel);
+        const generate = panel.querySelector('[data-generate-proposal]'), apply = panel.querySelector('[data-apply-proposal]'), status = panel.querySelector('[data-proposal-status]');
+        let pendingProposal = null;
+        generate.addEventListener('click', async () => {
+          if (busy) return;
+          const areaId = Number(dialog.querySelector('#dt-area').value), error = dialog.querySelector('.dt-error');
+          error.textContent = '';
+          if (!areaId) { error.textContent = 'Pilih area foto sebelum membuat usulan AI.'; return; }
+          if (!photoReady()) { error.textContent = 'Tunggu foto sumber selesai dimuat.'; return; }
+          busy = true; start = null; draft = null; pendingProposal = null; apply.classList.add('is-hidden'); draw();
+          const controls = [...dialog.querySelectorAll('button, input, select, textarea')].map(element => [element, element.disabled]);
+          controls.forEach(([element]) => { element.disabled = true; });
+          status.textContent = 'AI sedang memeriksa foto. Proses dapat memerlukan hingga 3 menit…';
+          try {
+            const result = await api(`/api/dataset-items/${datasetItemId}/ai-proposal`, post({ work_area_id: areaId }));
+            if (!dialog.isConnected || activeImport !== dialog) return;
+            pendingProposal = result.ai_draft;
+            if (!pendingProposal || pendingProposal.human_reviewed !== false || !Array.isArray(pendingProposal.annotations)) throw new Error('Usulan AI belum dapat dibaca. Coba lagi.');
+            status.textContent = `${pendingProposal.model}: ${label(pendingProposal.overall_label)} · ${pendingProposal.annotations.length} kotak. ${pendingProposal.description} ${(pendingProposal.review_notes||[]).join(' ')}`;
+            apply.classList.remove('is-hidden');
+          } catch (err) { if (dialog.isConnected) { status.textContent = 'Usulan belum berhasil dibuat. Anda tetap dapat mengisi label secara manual.'; error.textContent = err.message; } }
+          finally { busy = false; controls.forEach(([element, disabled]) => { element.disabled = disabled; }); submit.disabled = !datasets.length || !photoReady(); }
+        });
+        apply.addEventListener('click', () => {
+          if (busy || !pendingProposal) return;
+          if (Number(dialog.querySelector('#dt-area').value) !== pendingProposal.work_area_id) {
+            dialog.querySelector('.dt-error').textContent = 'Area telah berubah. Buat usulan baru untuk area yang dipilih.'; return;
+          }
+          dialog.querySelector('#dt-label').value = pendingProposal.overall_label;
+          dialog.querySelector('#dt-description').value = pendingProposal.description;
+          boxes.splice(0, boxes.length, ...pendingProposal.annotations.map(box => ({ ...box })));
+          dialog.querySelector('[name=license_confirmed]').checked = false;
+          dialog.querySelector('.dt-error').textContent = '';
+          draw(); tags();
+          status.textContent = 'Usulan diterapkan ke formulir. Periksa label, deskripsi, dan posisi kotak, lalu simpan hasil koreksi. Label belum terverifikasi. '+(pendingProposal.review_notes||[]).join(' ');
+          apply.classList.add('is-hidden');
+        });
+      }
+      if(proposal?.review_notes?.length) {
+        const note=document.createElement('div');note.className='dt-notice';note.setAttribute('role','status');
+        note.textContent=proposal.review_notes.join(' ');dialog.querySelector('.dt-fields').prepend(note);
+      }
       dialog.querySelector('[data-import-form]').addEventListener('submit', async e => {
         e.preventDefault(); if (busy) return;
         const form = e.currentTarget, fd = new FormData(form), error = dialog.querySelector('.dt-error'); error.textContent = '';

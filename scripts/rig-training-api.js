@@ -269,5 +269,17 @@ export function createRigTrainingApi(ctx, datasetTools) {
     }
   };
   handle.stop = () => { if (current) { current.cancelled = true; current.child?.kill(); } activeRuntime?.stop(); };
+  handle.modelStatus = () => ({ available: Boolean(active && activeRuntime && !changingModel), model_name: active?.model_name || null });
+  // Caller already holds the inference lock; never reacquire it here.
+  handle.detect = async (buffer, hazards, options = {}) => {
+    if (!active || !activeRuntime || changingModel) return { available: false, note: 'Model rig terlatih belum dipilih; Gemma tetap dapat digunakan.' };
+    const selection = active;
+    const ids = new Set(hazards.map(h => h.hazard_type_id));
+    const trained=selection.class_map.map(row=>row.hazard_type_id).filter(id=>ids.has(id));
+    if(!trained.length)return {available:false,note:'Model rig belum dilatih untuk kategori di area ini; usulan menggunakan Gemma.'};
+    const result = await activeRuntime.detect(buffer,options);
+    const detections = result.detections.map(row => ({ ...row, hazard_type_id: selection.class_map[row.class_id]?.hazard_type_id })).filter(row => ids.has(row.hazard_type_id));
+    return { available: true, model_name: selection.model_name, job_id: selection.job_id, trained_hazard_ids:trained, detections, latency_ms: result.latency_ms };
+  };
   return handle;
 }

@@ -21,6 +21,8 @@ import { createRigDataset } from './scripts/rig-dataset.js';
 import { createLearningApi } from './scripts/learning-api.js';
 import { createVerifiedMemory } from './scripts/verified-memory.js';
 import { createRigTrainingApi } from './scripts/rig-training-api.js';
+import { createAnnotationLearning } from './scripts/annotation-learning.js';
+import { createAnnotationJobs } from './scripts/annotation-jobs.js';
 import { createProtectCurationApi } from './scripts/protect-curation-api.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -28,7 +30,7 @@ const publicDir = path.join(root, 'public');
 const privateDir = path.join(root, 'data', 'private');
 const uploadDir = path.join(privateDir, 'uploads');
 const schemaFile = path.join(root, 'sql', 'database.sql');
-const featureSchemaFiles = ['live.sql', 'dataset-tools.sql', 'public-datasets.sql', 'dataset-delete.sql', 'rig-dataset.sql','learning-scope.sql','protect-curation.sql'].map(name => path.join(root, 'sql', name));
+const featureSchemaFiles = ['live.sql', 'dataset-tools.sql', 'public-datasets.sql', 'dataset-delete.sql', 'rig-dataset.sql','learning-scope.sql','protect-curation.sql','annotation-learning.sql'].map(name => path.join(root, 'sql', name));
 const sanitizerFile = path.join(root, 'scripts', 'sanitize_image.py');
 const port = Number(process.env.PORT || 3180);
 const host = '127.0.0.1';
@@ -120,7 +122,7 @@ async function jsonQuery(query) {
   catch { console.error('[db] SQL Server returned non-JSON output:', output.slice(start, start + 200)); throw httpError(503, 'Respons basis data belum dapat dibaca. Periksa konfigurasi SQL Server lokal.', 'DATABASE_RESPONSE'); }
 }
 
-const requiredTables = ['AppUser', 'WorkArea', 'HazardType', 'ImageAsset', 'ModelVersion', 'Analysis', 'Finding', 'AnalysisVlmPrediction', 'AnalysisFeedback', 'AuditEvent', 'Dataset', 'DatasetItem', 'Annotation', 'AnalysisLiveEvidence', 'DatasetItemProvenance', 'EvaluationRun', 'EvaluationItem', 'DatasetExternalSource', 'DatasetExternalItem', 'DatasetObjectClass', 'DatasetObjectAnnotation', 'DatasetImportSuppression','DatasetTrainingReview','RigPdfImport','RigPdfItemSuppression'];
+const requiredTables = ['AppUser', 'WorkArea', 'HazardType', 'ImageAsset', 'ModelVersion', 'Analysis', 'Finding', 'AnalysisVlmPrediction', 'AnalysisFeedback', 'AuditEvent', 'Dataset', 'DatasetItem', 'Annotation', 'AnalysisLiveEvidence', 'DatasetItemProvenance', 'EvaluationRun', 'EvaluationItem', 'DatasetExternalSource', 'DatasetExternalItem', 'DatasetObjectClass', 'DatasetObjectAnnotation', 'DatasetImportSuppression','DatasetTrainingReview','RigPdfImport','RigPdfItemSuppression','DatasetAiProposal'];
 const storagePermissions = [['ImageAsset','INSERT'], ['ImageAsset','UPDATE'], ['ModelVersion','INSERT'], ['ModelVersion','UPDATE'], ['Analysis','INSERT'], ['Analysis','UPDATE'], ['Finding','INSERT'], ['AnalysisVlmPrediction','INSERT'], ['AnalysisFeedback','INSERT'], ['AuditEvent','INSERT'], ['AnalysisLiveEvidence','INSERT'], ['DatasetItem','INSERT'], ['Annotation','INSERT'], ['DatasetItemProvenance','INSERT'], ['EvaluationRun','INSERT'], ['EvaluationRun','UPDATE'], ['EvaluationItem','INSERT'], ['EvaluationItem','UPDATE']];
 
 async function checkDatabaseHealth() {
@@ -287,7 +289,7 @@ async function fetchInspectionConfig(areaId) {
 async function getOllamaStatus() {
   try {
     const visionModels = await listOllamaVisionModels();
-    return { available: true, endpoint: ollamaBaseUrl, vision_models: visionModels, text_only_note: 'Model tanpa kemampuan vision tidak ditampilkan.' };
+    return { available: true, endpoint: ollamaBaseUrl, vision_models: visionModels, rig_model:rigTrainingApi.modelStatus(), text_only_note: 'Model tanpa kemampuan vision tidak ditampilkan.' };
   } catch (error) {
     return { available: false, endpoint: ollamaBaseUrl, vision_models: [], error: String(error.message || 'Ollama belum tersedia.').slice(0, 240) };
   }
@@ -302,6 +304,11 @@ const featureContext = { jsonQuery, executeSql, databaseName, sqlText, sqlAscii,
 const protectCurationApi = createProtectCurationApi({ ...featureContext, withDatasetMutationLock });
 const datasetTools = createDatasetTools(featureContext);
 const rigTrainingApi = createRigTrainingApi(featureContext, datasetTools);
+featureContext.detectRig = (...args) => rigTrainingApi.detect(...args);
+featureContext.rigModelStatus = () => rigTrainingApi.modelStatus();
+const annotationLearning = createAnnotationLearning(featureContext);
+featureContext.annotationLearning = annotationLearning;
+const annotationJobs = createAnnotationJobs(featureContext, annotationLearning);
 const rigDataset = createRigDataset(featureContext);
 const learningApi = createLearningApi(featureContext);
 
@@ -311,11 +318,12 @@ async function handleApi(request, response, url) {
   const pathname = url.pathname;
   let match;
   if (method === 'GET' && pathname === '/api/health') {
-    return sendJson(response, 200, { app: 'Inspeksi Visual', host, api_version: 14, ...await checkDatabaseHealth() });
+    return sendJson(response, 200, { app: 'Inspeksi Visual', host, api_version: 15, ...await checkDatabaseHealth() });
   }
   const user = pathname === '/api/auth/login' ? null : requireUser(request);
   if (user && await protectCurationApi(request, response, url, user)) return;
   if (user && await rigTrainingApi(request, response, url, user)) return;
+  if (user && await annotationJobs(request, response, url, user)) return;
   if (user && await learningApi(request, response, url, user)) return;
   if (user && await rigDataset(request, response, url, user)) return;
   if (user && await datasetTools(request, response, url, user)) return;
@@ -470,7 +478,13 @@ END; COMMIT TRANSACTION; SELECT @datasetReady AS dataset_ready,@id AS model_vers
       const available = await listOllamaVisionModels();
       if (!chosenModel) chosenModel = available.find(model => model.name === 'gemma3:4b')?.name || available[0]?.name || '';
       if (!chosenModel) throw new Error('Belum ada model vision lokal yang terpasang pada Ollama.');
-      inference = await withInferenceLock(user.user_id, () => analyzeWithOllama(photo.buffer, chosenModel, workArea, hazards, { profile,useExamples:form.get('use_examples')!=='off' }));
+      inference = await withInferenceLock(user.user_id, async () => {
+        let detector = null;
+        try { detector = await rigTrainingApi.detect(photo.buffer,hazards); }
+        catch { detector = { available:false,note:'Model rig belum dapat dipakai; pemeriksaan menggunakan Gemma.' }; }
+        return analyzeWithOllama(photo.buffer, chosenModel, workArea, hazards, { profile,useExamples:form.get('use_examples')!=='off',
+          detector: detector?.available ? { ...detector,enabled:true } : null });
+      });
       chosenModel = inference.model_name;
     } catch (error) {
       if (error.code === 'AI_BUSY') throw error;
@@ -735,12 +749,14 @@ const server = http.createServer(async (incoming, response) => {
 
 await bootstrapDatabase();
 await rigTrainingApi.initialize();
+await annotationJobs.initialize();
+if(databaseReady)await annotationLearning.prepareAreas().catch(error=>console.warn('[learning] Area PDF belum dapat disiapkan:',error.message));
 server.listen(port, host, () => {
   console.log(`Lentera K3 berjalan di http://${host}:${port}`);
   if (!databaseReady) console.log('Database belum tersambung. Jalankan sql/database.sql melalui SSMS atau sqlcmd, lalu muat ulang aplikasi.');
 });
 
 for (const signal of ['SIGINT','SIGTERM']) process.on(signal, () => {
-  rigTrainingApi.stop(); performanceMonitor.close();
+  annotationJobs.stop(); rigTrainingApi.stop(); performanceMonitor.close();
   server.close(() => process.exit(0));
 });
