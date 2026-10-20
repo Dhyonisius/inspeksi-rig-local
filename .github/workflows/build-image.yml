@@ -1,0 +1,89 @@
+name: Build image for OpenShift
+
+on:
+  workflow_dispatch:
+    inputs:
+      sqltools_license_approved:
+        description: "Saya berwenang menerima dan telah menyetujui lisensi Microsoft SQL tools untuk build ini"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-openshift-image
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Require explicit SQL tools license approval
+        env:
+          LICENSE_APPROVED: ${{ inputs.sqltools_license_approved }}
+        run: |
+          if [ "$LICENSE_APPROVED" != "true" ]; then
+            echo "::error::Konfirmasi lisensi Microsoft SQL tools diperlukan sebelum build."
+            exit 1
+          fi
+
+      - name: Checkout source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set image names
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          echo "IMAGE=$image" >> "$GITHUB_ENV"
+          echo "VERSION=sha-$GITHUB_SHA" >> "$GITHUB_ENV"
+
+      - name: Build Linux image
+        run: |
+          docker build --pull --platform linux/amd64 \
+            --build-arg ACCEPT_SQLTOOLS_EULA=Y \
+            --build-arg INSTALL_RIG_TRAINING=false \
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --tag "$IMAGE:$VERSION" \
+            --tag "$IMAGE:latest" \
+            .
+
+      - name: Check packaged runtime without external services
+        run: |
+          docker run --rm --entrypoint node "$IMAGE:$VERSION" --check /app/server.js
+          docker run --rm --entrypoint /opt/venv/bin/python "$IMAGE:$VERSION" -c "import PIL, fitz"
+          docker run --rm --entrypoint /opt/mssql-tools18/bin/sqlcmd "$IMAGE:$VERSION" -?
+
+      - name: Log in to GitHub Container Registry
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+
+      - name: Publish image
+        run: |
+          docker push "$IMAGE:$VERSION"
+          docker push "$IMAGE:latest"
+          digest="$(docker image inspect "$IMAGE:$VERSION" --format '{{index .RepoDigests 0}}')"
+          {
+            echo "## Image untuk OpenShift"
+            echo ""
+            echo "Image versi: $IMAGE:$VERSION"
+            echo "Image digest: $digest"
+            echo "Port aplikasi: 8080"
+            echo ""
+            echo "Build dan pemeriksaan runtime dasar berhasil. Koneksi SQL Server, Ollama, storage, dan OpenShift belum diuji."
+            echo "Package GHCR baru biasanya private meskipun repository public. Atur akses pull sebelum deploy."
+            echo "Serverless: batasi satu pod sampai session dan penyimpanan aplikasi mendukung beberapa replica."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Log out
+        if: always()
+        run: docker logout ghcr.io
