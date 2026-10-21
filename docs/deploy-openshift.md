@@ -26,6 +26,16 @@ Dockerfile memakai Node 22 Debian Bookworm, Microsoft ODBC/sqlcmd 18, dan virtua
 
 SQL tools memerlukan persetujuan lisensi Microsoft. Build sengaja tidak berjalan dengan `ACCEPT_SQLTOOLS_EULA=N`. Terapkan patch persetujuan di bawah hanya jika perusahaan mengizinkannya. Dependensi rentang versi perlu dikunci ke versi/digest hasil build yang disetujui setelah validasi perusahaan.
 
+### Debian HTTP 503 dan batas perbaikan
+
+Dockerfile mengubah hanya endpoint Debian bawaan dari HTTP ke HTTPS, baik format `.sources` maupun `.list`. Jika image slim belum memiliki bundle CA, Node menyediakan CA publik bawaannya untuk unduhan awal; paket `ca-certificates` kemudian memasang trust store sistem. Base image dengan CA perusahaan tetap diperlukan bila proxy melakukan inspeksi TLS. Validasi TLS dan tanda tangan paket APT tetap aktif. Retry dibatasi tiga kali dan update APT gagal jika ada indeks yang gagal diunduh, sehingga build tidak diam-diam memakai indeks lama.
+
+HTTP 503 sendiri belum membuktikan penyebabnya: bisa berasal dari mirror, proxy, atau gateway perusahaan. HTTPS mengatasi jalur HTTP yang bermasalah bila HTTPS diizinkan, tetapi tidak menjamin akses jaringan. Jika masih gagal, kirim ke IT waktu kejadian, nama build, host/URL paket dan status dari log yang telah disanitasi. IT perlu memeriksa egress builder, proxy, CA, serta mirror/registry yang disetujui. Jangan mengganti DNS, firewall, proxy perusahaan, `Verify-Peer`, atau `trusted=yes` untuk meloloskan build.
+
+BuildConfig memakai Docker strategy dan `forcePull: true`; akses registry tetap diperlukan. `USER root` hanya digunakan saat menyusun image/pemasangan paket. Pod runtime dan bootstrap tetap non-root, tanpa eskalasi privilege, tanpa token service account, dengan root filesystem read-only dan seluruh capability dilepas. Kode dan virtualenv tidak diberi izin tulis grup; hanya data/model yang memerlukannya. UID dan fsGroup volume ditentukan SCC cluster, bukan dikunci ke UID laptop. Tidak perlu menerapkan SCC `anyuid` atau privileged. CI manual juga memeriksa UID acak/grup 0 sebelum publish; pengujian PVC/SCC sebenarnya tetap harus dilakukan di cluster.
+
+Patch persetujuan EULA mengganti seluruh daftar buildArgs. Tinjau dan pertahankan argumen kustom yang telah disetujui sebelum menerapkannya. Meng-apply ulang `build.yaml` mengembalikan EULA ke `N`; persetujuan bukan default permanen dalam repository. EULA ini untuk paket klien ODBC/sqlcmd, bukan persetujuan lisensi/deployment SQL Server. Jangan menaruh password/PAT di buildArgs.
+
 ### 1. Siapkan akses GitHub baca saja
 
 Gunakan fine-grained PAT yang **hanya** mencakup `Dhyonisius/inspeksi-rig-local`, izin **Contents: Read-only**, masa berlaku terbatas. Token ini terpisah dari autentikasi Git Credential Manager laptop. Jangan gunakan token OAuth laptop sebagai secret build.
@@ -171,6 +181,7 @@ Jangan apply ulang runtime-template saat upgrade tanpa meninjau resource: templa
 |---|---|
 | Clone Git 401/403 | Source secret di project yang sama, PAT read-only repo yang benar, masa berlaku dan kebijakan organisasi |
 | Build gagal awal | Persetujuan lisensi/buildArg, Dockerfile strategy, akses registry/paket, CA/proxy perusahaan |
+| Debian HTTP/HTTPS 503 | Catat URL/status/waktu dari log builder; setelah retry terbatas tetap gagal, minta IT memeriksa proxy/egress/mirror. Perbaikan source HTTPS tidak mengubah kebijakan perusahaan |
 | Pod Pending | PVC Bound, storage class, kuota dan izin SCC/fsGroup; jangan langsung meminta root/anyuid |
 | ImagePullBackOff | Digest image benar, build selesai, registry internal dan izin pull dalam project |
 | Pod berjalan tetapi tidak Ready | Log SQL, endpoint TCP/port, firewall, CA, login runtime, skema hasil Job migrasi |
