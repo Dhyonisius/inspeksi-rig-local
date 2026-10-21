@@ -24,6 +24,8 @@ items:
         type: Docker
         dockerStrategy:
           dockerfilePath: Dockerfile
+          # Refresh the base image rather than reusing a stale builder cache.
+          forcePull: true
           buildArgs:
             - name: ACCEPT_SQLTOOLS_EULA
               value: N

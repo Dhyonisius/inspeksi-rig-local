@@ -2,6 +2,7 @@
 spec:
   strategy:
     dockerStrategy:
+      # Merge patch replaces this entire list; preserve any approved custom args.
       buildArgs:
         - name: ACCEPT_SQLTOOLS_EULA
           value: Y
