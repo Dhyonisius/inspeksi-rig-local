@@ -61,6 +61,26 @@ jobs:
           docker run --rm --entrypoint /opt/venv/bin/python "$IMAGE:$VERSION" -c "import PIL, fitz"
           docker run --rm --entrypoint /opt/mssql-tools18/bin/sqlcmd "$IMAGE:$VERSION" -?
 
+      - name: Check arbitrary UID with restricted filesystem
+        run: |
+          docker run --rm --user 1001230000:0 --read-only \
+            --cap-drop ALL --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,nosuid,nodev,mode=1777 \
+            --entrypoint sh "$IMAGE:$VERSION" -ec '
+              node --check /app/server.js
+              /opt/venv/bin/python -c "import PIL, fitz"
+              /opt/mssql-tools18/bin/sqlcmd -? >/dev/null
+              touch /tmp/rig-write-check
+              test ! -w /app/server.js
+            '
+          # Independently check image directory permissions without read-only masking them.
+          docker run --rm --user 1001230000:0 --cap-drop ALL \
+            --security-opt no-new-privileges --entrypoint sh "$IMAGE:$VERSION" -ec '
+              touch /app/data/private/.write-check /app/models/.write-check
+              test ! -w /app/server.js
+              test ! -w /opt/venv/bin/python
+            '
+
       - name: Log in to GitHub Container Registry
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
