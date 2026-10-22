@@ -17,7 +17,7 @@ items:
         type: Git
         git:
           uri: https://github.com/Dhyonisius/inspeksi-rig-local.git
-          ref: main
+          ref: fix/ubuntu22-runtime-complete
         sourceSecret:
           name: github-inspeksi-read
       strategy:
@@ -30,7 +30,7 @@ items:
             - name: ACCEPT_SQLTOOLS_EULA
               value: N
             - name: INSTALL_RIG_TRAINING
-              value: 'false'
+              value: 'true'
       output:
         to:
           kind: ImageStreamTag
@@ -43,4 +43,4 @@ items:
           memory: 1Gi
         limits:
           cpu: '2'
-          memory: 4Gi
+          memory: 6Gi

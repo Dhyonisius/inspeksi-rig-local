@@ -7,4 +7,4 @@ spec:
         - name: ACCEPT_SQLTOOLS_EULA
           value: Y
         - name: INSTALL_RIG_TRAINING
-          value: 'false'
+          value: 'true'
