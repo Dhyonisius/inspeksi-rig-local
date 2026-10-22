@@ -1,49 +1,55 @@
-# Node/npm and public trust roots are copied from the official Node image.
-# The final OS and every installed OS package are Ubuntu 22.04 (Jammy).
-ARG NODE_IMAGE=node:22-bookworm-slim
-ARG UBUNTU_IMAGE=ubuntu:22.04
-FROM ${NODE_IMAGE} AS node-runtime
-RUN node -e 'require("fs").writeFileSync("/tmp/public-ca.crt",require("tls").rootCertificates.join("\n")+"\n")'
-
-FROM ${UBUNTU_IMAGE}
+# OpenShift runtime: Ubuntu 22.04 is the only image used in this build.
+# Install the official Node.js Linux binary directly; no Debian image/stage.
+FROM ubuntu:22.04
+ARG NODE_VERSION=22.23.4
 ARG ACCEPT_SQLTOOLS_EULA=N
 ARG INSTALL_RIG_TRAINING=true
 USER root
-COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
-COPY --from=node-runtime /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
-COPY --from=node-runtime /tmp/public-ca.crt /etc/ssl/certs/ca-certificates.crt
 # Public organizational CA certificates only; never copy keys or credentials.
 COPY deploy/container/ca/ /usr/local/share/ca-certificates/
 RUN test "$ACCEPT_SQLTOOLS_EULA" = Y \
     || { echo >&2 'Microsoft SQL tools license approval required: ACCEPT_SQLTOOLS_EULA=Y'; exit 1; }
+# Bootstrap trust using Ubuntu's signed package repositories. Keep APT signature
+# checks enabled; switch the repository transport to HTTPS once CA roots exist.
 RUN set -eu; \
     test "$(dpkg --print-architecture)" = amd64; \
     case "$INSTALL_RIG_TRAINING" in true|false) ;; *) echo >&2 'INSTALL_RIG_TRAINING must be true or false'; exit 1;; esac; \
-    for cert in /usr/local/share/ca-certificates/*.crt; do \
-      [ -f "$cert" ] || continue; cat "$cert" >> /etc/ssl/certs/ca-certificates.crt; \
-    done; \
+    case "$NODE_VERSION" in 22.*) ;; *) echo >&2 'NODE_VERSION must be a Node.js 22 release'; exit 1;; esac; \
+    printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAPT::Update::Error-Mode "any";\n' > /etc/apt/apt.conf.d/80-rig-network; \
+    apt-get update; \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates; \
+    update-ca-certificates; \
     find /etc/apt -type f \( -name '*.sources' -o -name '*.list' \) \
       -exec sed -i -e 's|http://archive.ubuntu.com/|https://archive.ubuntu.com/|g' \
                    -e 's|http://security.ubuntu.com/|https://security.ubuntu.com/|g' {} +; \
-    printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAPT::Update::Error-Mode "any";\n' > /etc/apt/apt.conf.d/80-rig-network; \
     apt-get update; \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      ca-certificates curl python3 python3-venv libstdc++6 libatomic1 \
+      curl xz-utils python3 python3-venv libstdc++6 libatomic1 \
       libgomp1 libgl1 libglib2.0-0 libgssapi-krb5-2; \
-    update-ca-certificates; \
+    node_archive="node-v${NODE_VERSION}-linux-x64.tar.xz"; \
+    node_url="https://nodejs.org/dist/v${NODE_VERSION}"; \
+    curl --fail --show-error --silent --location --retry 3 --connect-timeout 30 --max-time 300 \
+      "$node_url/$node_archive" -o "/tmp/$node_archive"; \
+    curl --fail --show-error --silent --location --retry 3 --connect-timeout 30 --max-time 180 \
+      "$node_url/SHASUMS256.txt" -o /tmp/node-SHASUMS256.txt; \
+    cd /tmp; \
+    awk -v archive="$node_archive" '$2 == archive { print }' node-SHASUMS256.txt > node-SHASUMS256.selected; \
+    test "$(wc -l < node-SHASUMS256.selected)" -eq 1; \
+    sha256sum --check node-SHASUMS256.selected; \
+    tar -xJf "$node_archive" -C /usr/local --strip-components=1 --no-same-owner; \
+    cd /; \
+    test "$(node --version)" = "v$NODE_VERSION"; \
+    npm --version; \
+    rm -f "/tmp/$node_archive" /tmp/node-SHASUMS256.txt /tmp/node-SHASUMS256.selected; \
     curl --fail --show-error --silent --location --retry 3 --connect-timeout 30 --max-time 180 \
       https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -o /tmp/microsoft.deb; \
     dpkg -i /tmp/microsoft.deb; \
     apt-get update; \
     ACCEPT_EULA="$ACCEPT_SQLTOOLS_EULA" DEBIAN_FRONTEND=noninteractive \
       apt-get install -y --no-install-recommends msodbcsql18 mssql-tools18; \
+    /opt/mssql-tools18/bin/sqlcmd -? >/dev/null; \
     rm -f /tmp/microsoft.deb; \
-    rm -rf /var/lib/apt/lists/*; \
-    ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm; \
-    ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx; \
-    node -e 'if(process.versions.node.split(".")[0]!=="22")process.exit(1)'; \
-    npm --version; \
-    /opt/mssql-tools18/bin/sqlcmd -? >/dev/null
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY deploy/container/requirements*.txt /tmp/
