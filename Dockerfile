@@ -1,9 +1,9 @@
-
-FROM ubuntu:24.04
+FROM ubuntu:22.04
 
 ARG ACCEPT_SQLTOOLS_EULA=N
 
 ENV DEBIAN_FRONTEND=noninteractive
+RUN sed -i 's|http://archive.ubuntu.com|http://id.archive.ubuntu.com|g' /etc/apt/sources.list
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl gnupg python3 python3-venv \
@@ -19,7 +19,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 # Install Microsoft SQL tools
 RUN test "$ACCEPT_SQLTOOLS_EULA" = Y \
     && curl -fsSL \
-       https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb \
+       https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb \
        -o /tmp/microsoft.deb \
     && dpkg -i /tmp/microsoft.deb \
     && ACCEPT_EULA=Y apt-get update \
