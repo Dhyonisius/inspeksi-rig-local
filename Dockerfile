@@ -16,16 +16,23 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Microsoft SQL tools
-RUN test "$ACCEPT_SQLTOOLS_EULA" = Y \
-    && curl -fsSL \
-       https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb \
-       -o /tmp/microsoft.deb \
-    && dpkg -i /tmp/microsoft.deb \
-    && ACCEPT_EULA=Y apt-get update \
-    && ACCEPT_EULA=Y apt-get install -y \
-       msodbcsql18 mssql-tools18 \
-    && rm -rf /var/lib/apt/lists/*
+# SQL tools optional during development build.
+# Default: skip Microsoft package downloads.
+ARG INSTALL_SQLTOOLS=false
+
+RUN if [ "$INSTALL_SQLTOOLS" = "true" ]; then \
+      test "$ACCEPT_SQLTOOLS_EULA" = "Y" && \
+      curl -fsSL \
+        https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb \
+        -o /tmp/microsoft.deb && \
+      dpkg -i /tmp/microsoft.deb && \
+      ACCEPT_EULA=Y apt-get update && \
+      ACCEPT_EULA=Y apt-get install -y \
+        msodbcsql18 mssql-tools18 && \
+      rm -rf /var/lib/apt/lists/*; \
+    else \
+      echo "SQL tools skipped for development build"; \
+    fi
 
 WORKDIR /app
 
