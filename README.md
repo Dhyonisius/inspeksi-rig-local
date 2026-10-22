@@ -1,5 +1,7 @@
 # Inspeksi Rig Lokal
 
+Container menggunakan **Ubuntu 22.04 + Node.js 22**. Lihat [audit fitur, container lokal, dan akses intranet Pertamina](docs/ubuntu22-intranet.md). Dependensi training CPU/ONNX termasuk pada profil penuh; SQL Server, Ollama, bobot model dan data tetap disediakan terpisah.
+
 ## Deployment OpenShift perusahaan
 
 Lihat [panduan deployment dari GitHub ke OpenShift](docs/deploy-openshift.md). Gunakan **Dockerfile**, bukan Python S2I. Build image dapat dikerjakan sebelum SQL Server dan Ollama perusahaan tersedia; fungsi inspeksi membutuhkan kedua layanan tersebut dan PVC. Manifest tidak mengunci namespace perusahaan. Paket deployment belum diuji pada cluster tujuan.
