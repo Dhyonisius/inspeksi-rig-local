@@ -1,0 +1,9 @@
+# Match the CPU detector/export stack used by prepare-detector.py.
+torch==2.8.0
+torchvision==0.23.0
+ultralytics==8.3.203
+onnx==1.19.0
+onnxruntime==1.23.2
+numpy==2.2.6
+Pillow==11.3.0
+PyYAML>=6.0,<7

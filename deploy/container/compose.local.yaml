@@ -1,0 +1,37 @@
+# Start from repository root with --env-file .env.
+# This development profile is bound to the laptop loopback interface only.
+services:
+  app:
+    image: inspeksi-rig:ubuntu22-local
+    build:
+      context: ../..
+      args:
+        ACCEPT_SQLTOOLS_EULA: ${ACCEPT_SQLTOOLS_EULA:?Set to Y only after approving Microsoft SQL tools license}
+        INSTALL_RIG_TRAINING: ${INSTALL_RIG_TRAINING:-true}
+    ports:
+      - '127.0.0.1:3180:8080'
+    environment:
+      NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: '8080'
+      APP_ORIGIN: http://localhost:3180,http://127.0.0.1:3180
+      SQL_SERVER: ${SQL_SERVER:?Set a reachable SQL Server TCP endpoint}
+      SQL_USER: ${SQL_USER:?Set the dedicated database login}
+      SQL_PASSWORD: ${SQL_PASSWORD:?Set the dedicated database password in untracked .env}
+      SQL_ENCRYPT: mandatory
+      SQL_TRUST_SERVER_CERTIFICATE: 'false'
+      SQL_MIGRATE_ON_START: 'false'
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,mode=1777
+    volumes:
+      - rig-data:/app/data
+      - rig-models:/app/models
+    mem_limit: 6g
+    cpus: 2
+volumes:
+  rig-data:
+  rig-models:
