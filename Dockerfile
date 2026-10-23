@@ -90,5 +90,7 @@ ENV NODE_ENV=production HOST=0.0.0.0 PORT=8080 \
     NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt \
     YOLO_AUTOINSTALL=False YOLO_OFFLINE=true
 EXPOSE 8080
+# This diagnostic never contacts SQL/Ollama or runs migrations during build.
+RUN node scripts/openshift-preflight.mjs --package-only
 USER 1001
 CMD ["node", "server.js"]
