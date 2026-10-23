@@ -1,0 +1,245 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "inspeksi-rig-ubuntu-deploy-config"
+      },
+      "data": {
+        "SQL_SERVER": "REPLACE_WITH_SQL_TCP_ENDPOINT",
+        "OLLAMA_BASE_URL": "REPLACE_WITH_OLLAMA_HTTP_URL",
+        "APP_ORIGIN": "https://REPLACE_WITH_APPROVED_HOST"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "inspeksi-rig-ubuntu-deploy-storage"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "10Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "inspeksi-rig-ubuntu-deploy"
+      },
+      "spec": {
+        "replicas": 0,
+        "revisionHistoryLimit": 2,
+        "strategy": {
+          "type": "Recreate"
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "inspeksi-rig-ubuntu-deploy"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "inspeksi-rig-ubuntu-deploy"
+            }
+          },
+          "spec": {
+            "nodeSelector": {
+              "kubernetes.io/os": "linux",
+              "kubernetes.io/arch": "amd64"
+            },
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "runAsNonRoot": true,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "initContainers": [
+              {
+                "name": "prepare-storage",
+                "image": "REPLACE_WITH_IMAGE_AT_SHA256",
+                "command": [
+                  "node",
+                  "-e",
+                  "const fs=require('fs');for(const p of ['data/private','models'])fs.mkdirSync('/storage/'+p,{recursive:true});"
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "64Mi"
+                  },
+                  "limits": {
+                    "cpu": "200m",
+                    "memory": "128Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "storage",
+                    "mountPath": "/storage"
+                  },
+                  {
+                    "name": "temporary",
+                    "mountPath": "/tmp"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "storage",
+                "persistentVolumeClaim": {
+                  "claimName": "inspeksi-rig-ubuntu-deploy-storage"
+                }
+              },
+              {
+                "name": "temporary",
+                "emptyDir": {
+                  "sizeLimit": "1Gi"
+                }
+              }
+            ],
+            "terminationGracePeriodSeconds": 40,
+            "containers": [
+              {
+                "name": "app",
+                "image": "REPLACE_WITH_IMAGE_AT_SHA256",
+                "envFrom": [
+                  {
+                    "configMapRef": {
+                      "name": "inspeksi-rig-ubuntu-deploy-config"
+                    }
+                  },
+                  {
+                    "secretRef": {
+                      "name": "inspeksi-rig-ubuntu-deploy-sql"
+                    }
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "SQL_MIGRATE_ON_START",
+                    "value": "false"
+                  },
+                  {
+                    "name": "SQL_ENCRYPT",
+                    "value": "mandatory"
+                  },
+                  {
+                    "name": "SQL_TRUST_SERVER_CERTIFICATE",
+                    "value": "false"
+                  }
+                ],
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "250m",
+                    "memory": "512Mi"
+                  },
+                  "limits": {
+                    "cpu": "2",
+                    "memory": "6Gi"
+                  }
+                },
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/livez",
+                    "port": "http"
+                  },
+                  "periodSeconds": 10,
+                  "failureThreshold": 180
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/livez",
+                    "port": "http"
+                  },
+                  "periodSeconds": 20,
+                  "timeoutSeconds": 3
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/readyz",
+                    "port": "http"
+                  },
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 3
+                },
+                "volumeMounts": [
+                  {
+                    "name": "storage",
+                    "mountPath": "/app/data",
+                    "subPath": "data"
+                  },
+                  {
+                    "name": "storage",
+                    "mountPath": "/app/models",
+                    "subPath": "models"
+                  },
+                  {
+                    "name": "temporary",
+                    "mountPath": "/tmp"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "inspeksi-rig-ubuntu-deploy"
+      },
+      "spec": {
+        "selector": {
+          "app": "inspeksi-rig-ubuntu-deploy"
+        },
+        "ports": [
+          {
+            "name": "http",
+            "port": 8080,
+            "targetPort": "http"
+          }
+        ]
+      }
+    }
+  ]
+}
