@@ -1,5 +1,7 @@
 # Deploy Inspeksi Rig dari GitHub ke OpenShift perusahaan
 
+Untuk langkah manual terbaru, CA perusahaan, dan Deployment uji terpisah, gunakan [panduan manual perusahaan](openshift-manual-perusahaan.md). Jangan gunakan instruksi bootstrap database pada database existing tanpa tinjauan DBA.
+
 Untuk audit fitur Ubuntu 22.04, penggunaan lokal, dan hostname HTTPS intranet Pertamina, lihat [panduan Ubuntu dan intranet](ubuntu22-intranet.md). Keberhasilan build tidak membuktikan akses jaringan perusahaan.
 
 ## Status dan arsitektur yang benar
@@ -24,13 +26,13 @@ Tidak ada namespace perusahaan yang ditulis dalam manifest. Semua resource masuk
 
 Minta administrator memberikan project latihan, akses BuildConfig/ImageStream, registry image internal aktif, kuota build, dan izin keluar ke GitHub serta sumber paket/image. Tidak perlu meminta akses administrator cluster atau SCC `anyuid` untuk image aplikasi ini. Image disiapkan untuk UID acak/non-root. Database terpisah memiliki persyaratan deployment sendiri.
 
-OS final Dockerfile adalah Ubuntu 22.04; Node 22/npm dan CA publik disalin dari stage image Node resmi. Tidak ada instalasi paket Debian di image final. Microsoft ODBC/sqlcmd 18 dipasang dari repository Ubuntu 22.04 Microsoft. Python media memuat Pillow, PyMuPDF, pypdf, dan pdfplumber; environment CPU training/ONNX terpisah dipasang secara default. Builder memerlukan registry kedua base image, repository Ubuntu, packages.microsoft.com, PyPI, dan download.pytorch.org. Untuk jaringan terisolasi, administrator menyediakan mirror/base image dan CA yang disetujui. Jangan menonaktifkan validasi TLS.
+Seluruh build memakai satu image Ubuntu 22.04, tanpa stage/image Debian. Node 22/npm dipasang dari arsip resmi Node.js dengan pemeriksaan SHA-256. CA publik berasal dari paket Ubuntu. Microsoft ODBC/sqlcmd 18 dipasang dari repository Ubuntu 22.04 Microsoft. Python media memuat Pillow, PyMuPDF, pypdf, dan pdfplumber; environment CPU training/ONNX terpisah dipasang secara default. Builder memerlukan registry Ubuntu, nodejs.org, repository Ubuntu, packages.microsoft.com beserta host redirect resminya, PyPI beserta host file paket, dan download.pytorch.org. Untuk jaringan terisolasi, administrator menyediakan mirror/base image dan CA yang disetujui. Jangan menonaktifkan validasi TLS.
 
 SQL tools memerlukan persetujuan lisensi Microsoft. Build sengaja tidak berjalan dengan `ACCEPT_SQLTOOLS_EULA=N`. Terapkan patch persetujuan di bawah hanya jika perusahaan mengizinkannya. Dependensi rentang versi perlu dikunci ke versi/digest hasil build yang disetujui setelah validasi perusahaan.
 
 ### Unduhan paket Ubuntu dan batas perbaikan
 
-Dockerfile menggunakan HTTPS untuk archive.ubuntu.com dan security.ubuntu.com. Trust awal berasal dari CA publik Node, lalu paket ca-certificates membangun trust store Ubuntu. CA organisasi yang disetujui dapat ditempatkan sebagai berkas publik .crt di deploy/container/ca sebelum build. Tidak ada pemaksaan mirror regional. Validasi TLS/tanda tangan APT tetap aktif; retry tiga kali dan kegagalan indeks menghentikan build.
+Dockerfile memasang ca-certificates melalui repository bawaan Ubuntu dengan verifikasi tanda tangan APT tetap aktif, lalu menggunakan HTTPS untuk archive.ubuntu.com dan security.ubuntu.com. Jika transport bootstrap bawaan tidak diizinkan perusahaan, gunakan base Ubuntu dengan trust store terpasang atau mirror yang disetujui IT; jangan mengubah jaringan perusahaan. CA organisasi yang disetujui dapat ditempatkan sebagai berkas publik .crt di deploy/container/ca sebelum build. Tidak ada pemaksaan mirror regional. Validasi TLS/tanda tangan APT tetap aktif; retry tiga kali dan kegagalan indeks menghentikan build.
 
 HTTP 503 sendiri belum membuktikan penyebabnya: bisa berasal dari mirror, proxy, atau gateway perusahaan. HTTPS mengatasi jalur HTTP yang bermasalah bila HTTPS diizinkan, tetapi tidak menjamin akses jaringan. Jika masih gagal, kirim ke IT waktu kejadian, nama build, host/URL paket dan status dari log yang telah disanitasi. IT perlu memeriksa egress builder, proxy, CA, serta mirror/registry yang disetujui. Jangan mengganti DNS, firewall, proxy perusahaan, `Verify-Peer`, atau `trusted=yes` untuk meloloskan build.
 
@@ -175,7 +177,7 @@ Jangan apply ulang runtime-template saat upgrade tanpa meninjau resource: templa
 - Image Ubuntu default memuat dependensi media/PDF, SQL tools, training CPU, ekspor ONNX, dan runtime detektor. `INSTALL_RIG_TRAINING=false` hanya untuk profil ringan dan menonaktifkan fungsi training/detektor pada image itu. Model, dataset terverifikasi, dan layanan Ollama tetap disediakan terpisah. Default batas memori runtime 6Gi dan CPU 2 adalah titik awal, bukan jaminan cukup untuk semua dataset; sesuaikan APP_MEMORY_LIMIT/APP_CPU_LIMIT bersama tim platform.
 - Bobot awal `models/sh17-yolov8n/source-yolo8n.pt` dan model terlatih tidak ada di Git/image. Pasang berkas yang sah dan tervalidasi ke PVC bila fitur training diaktifkan; kode tidak mengunduh bobot secara otomatis. Lisensi paket/model harus sesuai penggunaan perusahaan.
 - PVC bukan backup. Simpan backup SQL dan file secara konsisten, serta uji pemulihannya sesuai prosedur perusahaan.
-- Build arguments UBUNTU_IMAGE dan NODE_IMAGE dapat menunjuk mirror/digest yang disetujui, dengan struktur image yang kompatibel. OS final tetap harus Ubuntu 22.04. Jangan mengganti ke UBI tanpa mengadaptasi pengelola paket dan menguji kembali.
+- Dockerfile memakai FROM ubuntu:22.04 saja. NODE_VERSION mengunci versi Node 22. Bila perusahaan mewajibkan mirror, tim platform perlu menyiapkan sumber Ubuntu/Node/paket yang disetujui dan menguji ulang; jangan mengganti ke image Debian atau menonaktifkan TLS.
 
 ## Diagnosis singkat
 
