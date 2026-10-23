@@ -1,0 +1,24 @@
+{
+  "apiVersion": "route.openshift.io/v1",
+  "kind": "Route",
+  "metadata": {
+    "name": "inspeksi-rig-ubuntu-deploy",
+    "annotations": {
+      "haproxy.router.openshift.io/timeout": "300s"
+    }
+  },
+  "spec": {
+    "host": "REPLACE_WITH_APPROVED_HOST",
+    "to": {
+      "kind": "Service",
+      "name": "inspeksi-rig-ubuntu-deploy"
+    },
+    "port": {
+      "targetPort": "http"
+    },
+    "tls": {
+      "termination": "edge",
+      "insecureEdgeTerminationPolicy": "Redirect"
+    }
+  }
+}

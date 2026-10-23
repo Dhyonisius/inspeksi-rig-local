@@ -1,0 +1,22 @@
+{
+  "spec": {
+    "source": {
+      "git": {
+        "ref": "fix/ubuntu22-runtime-complete"
+      },
+      "configMaps": [
+        {
+          "configMap": {
+            "name": "inspeksi-rig-build-ca"
+          },
+          "destinationDir": "deploy/container/ca"
+        }
+      ]
+    },
+    "strategy": {
+      "dockerStrategy": {
+        "forcePull": true
+      }
+    }
+  }
+}

@@ -8,6 +8,11 @@ on:
         required: true
         default: false
         type: boolean
+      include_training:
+        description: "Include CPU training, export, and ONNX detector dependencies"
+        required: true
+        default: true
+        type: boolean
 
 permissions:
   contents: read
@@ -19,7 +24,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     permissions:
       contents: read
       packages: write
@@ -45,10 +50,12 @@ jobs:
           echo "VERSION=sha-$GITHUB_SHA" >> "$GITHUB_ENV"
 
       - name: Build Linux image
+        env:
+          INCLUDE_TRAINING: ${{ inputs.include_training }}
         run: |
           docker build --pull --platform linux/amd64 \
             --build-arg ACCEPT_SQLTOOLS_EULA=Y \
-            --build-arg INSTALL_RIG_TRAINING=false \
+            --build-arg "INSTALL_RIG_TRAINING=$INCLUDE_TRAINING" \
             --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
             --label "org.opencontainers.image.revision=$GITHUB_SHA" \
             --tag "$IMAGE:$VERSION" \
@@ -60,6 +67,17 @@ jobs:
           docker run --rm --entrypoint node "$IMAGE:$VERSION" --check /app/server.js
           docker run --rm --entrypoint /opt/venv/bin/python "$IMAGE:$VERSION" -c "import PIL, fitz"
           docker run --rm --entrypoint /opt/mssql-tools18/bin/sqlcmd "$IMAGE:$VERSION" -?
+          docker run --rm --entrypoint /opt/venv/bin/python "$IMAGE:$VERSION" /app/scripts/container-smoke.py
+          docker run --rm --entrypoint /opt/venv/bin/python "$IMAGE:$VERSION" -m unittest discover -s /app/scripts -p container_compat_test.py
+          docker run --rm --entrypoint sh "$IMAGE:$VERSION" -ec 'node --test /app/scripts/*.test.js'
+
+      - name: Check full CPU training and detector stack
+        if: inputs.include_training
+        run: |
+          docker run --rm --user 1001230000:0 --read-only --cap-drop ALL \
+            --security-opt no-new-privileges --tmpfs /tmp:rw,nosuid,nodev,mode=1777 \
+            --entrypoint /opt/training/bin/python "$IMAGE:$VERSION" /app/scripts/container-smoke.py --training
+          docker run --rm --entrypoint /opt/training/bin/python "$IMAGE:$VERSION" -m unittest discover -s /app/scripts -p detector_worker_test.py
 
       - name: Check arbitrary UID with restricted filesystem
         run: |

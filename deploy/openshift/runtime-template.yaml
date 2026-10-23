@@ -14,6 +14,11 @@ parameters:
     description: Ollama endpoint reachable from the pod, e.g. http://ollama.ai.svc:11434
   - name: STORAGE_SIZE
     value: 10Gi
+  - name: APP_MEMORY_LIMIT
+    value: 6Gi
+    description: CPU training needs more memory than the lightweight web image; size with real datasets.
+  - name: APP_CPU_LIMIT
+    value: '2'
 objects:
   - apiVersion: v1
     kind: ConfigMap
@@ -101,7 +106,7 @@ objects:
                 timeoutSeconds: 3
               resources:
                 requests: {cpu: 250m, memory: 512Mi}
-                limits: {cpu: '1', memory: 1Gi}
+                limits: {cpu: '${APP_CPU_LIMIT}', memory: '${APP_MEMORY_LIMIT}'}
               volumeMounts:
                 - name: storage
                   mountPath: /app/data

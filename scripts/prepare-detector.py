@@ -28,6 +28,14 @@ def env_python(folder):
     return folder / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 
 
+def runtime_python():
+    return Path(os.environ['DETECTOR_PYTHON_EXE']) if os.environ.get('DETECTOR_PYTHON_EXE') else env_python(RUNTIME_ENV)
+
+
+def export_python():
+    return Path(os.environ['RIG_TRAINING_PYTHON_EXE']) if os.environ.get('RIG_TRAINING_PYTHON_EXE') else env_python(EXPORT_ENV)
+
+
 def run(command):
     (ROOT / "data" / "private" / "detector-settings").mkdir(parents=True, exist_ok=True)
     print("Running:", " ".join(str(part) for part in command), flush=True)
@@ -35,6 +43,14 @@ def run(command):
 
 
 def install():
+    # Container environments are built once and read-only at runtime. Verify
+    # configured interpreters instead of reinstalling packages into the PVC.
+    if os.environ.get('DETECTOR_PYTHON_EXE') or os.environ.get('RIG_TRAINING_PYTHON_EXE'):
+        if not (os.environ.get('DETECTOR_PYTHON_EXE') and os.environ.get('RIG_TRAINING_PYTHON_EXE')):
+            raise ValueError('Isi kedua path runtime detektor dan training, atau biarkan keduanya kosong.')
+        run([runtime_python(), '-c', 'import numpy, onnxruntime, PIL'])
+        run([export_python(), '-c', 'import torch, torchvision, ultralytics, onnx'])
+        return
     for folder in [RUNTIME_ENV, EXPORT_ENV]:
         if not env_python(folder).exists():
             venv.EnvBuilder(with_pip=True).create(folder)
@@ -84,7 +100,7 @@ def download():
 
 
 def export():
-    python = env_python(EXPORT_ENV)
+    python = export_python()
     if Path(sys.executable).resolve() != python.resolve():
         if not python.exists():
             raise ValueError("Lingkungan ekspor belum tersedia. Jalankan --install lebih dahulu.")
@@ -130,11 +146,11 @@ def export():
 def check():
     path = MODEL_DIR / "manifest.json"
     if not path.exists():
-        print(json.dumps({"ready": False, "reason": "Belum disiapkan.", "runtime_python": str(env_python(RUNTIME_ENV))}))
+        print(json.dumps({"ready": False, "reason": "Belum disiapkan.", "runtime_python": str(runtime_python())}))
         return
     manifest = json.loads(path.read_text(encoding="utf-8"))
     valid = manifest.get("class_names") == CLASSES and manifest.get("sha256") == sha256(MODEL_DIR / "model.onnx")
-    print(json.dumps({"ready": valid, "model_name": manifest.get("model_name"), "model_bytes": manifest.get("model_bytes"), "runtime_python": str(env_python(RUNTIME_ENV))}))
+    print(json.dumps({"ready": valid, "model_name": manifest.get("model_name"), "model_bytes": manifest.get("model_bytes"), "runtime_python": str(runtime_python())}))
 
 
 if __name__ == "__main__":

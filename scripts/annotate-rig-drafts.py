@@ -1,13 +1,15 @@
 """Generate resumable LOCAL AI proposals. Never marks human review or safety verification."""
-import base64, hashlib, io, json, os, time, urllib.request, ctypes
+import base64, hashlib, io, json, os, time, urllib.request
 from pathlib import Path
 from PIL import Image
+from runtime_process import process_alive
 
 ROOT = Path(__file__).resolve().parent.parent
 PREPARED = ROOT / 'data/private/rig-pdf/prepared'
 OUT = ROOT / 'data/private/rig-pdf/ai-drafts'
 VERSION = 'rig-proposal-1'
-MODEL = 'gemma3:4b'
+MODEL = os.environ.get('OLLAMA_VISION_MODEL', 'gemma3:4b')
+OLLAMA_BASE_URL = os.environ.get('OLLAMA_BASE_URL', 'http://127.0.0.1:11434').rstrip('/')
 
 def write(name, data):
     target = OUT / name
@@ -17,26 +19,18 @@ def write(name, data):
 
 def request(route, data=None, timeout=180):
     body = json.dumps(data).encode() if data is not None else None
-    req = urllib.request.Request('http://127.0.0.1:11434'+route, data=body, headers={'Content-Type':'application/json'})
+    req = urllib.request.Request(OLLAMA_BASE_URL+route, data=body, headers={'Content-Type':'application/json'})
     with urllib.request.urlopen(req, timeout=timeout) as response:
         return json.load(response)
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     lock = OUT / 'worker.lock'
-    # A dead worker must not prevent resuming after Windows has restarted.
+    # Resume after a dead worker on Windows or Linux; never steal a live lock.
     if lock.exists():
         pid = int(lock.read_text().strip())
-        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-        kernel.OpenProcess.restype = ctypes.c_void_p
-        kernel.OpenProcess.argtypes = [ctypes.c_ulong, ctypes.c_int, ctypes.c_ulong]
-        kernel.CloseHandle.argtypes = [ctypes.c_void_p]
-        handle = kernel.OpenProcess(0x1000, False, pid)
-        if handle:
-            kernel.CloseHandle(handle)
+        if process_alive(pid):
             raise RuntimeError('Pekerja anotasi masih aktif; tidak memulai proses kedua.')
-        if ctypes.get_last_error() not in (87, 1168):
-            raise RuntimeError('Status proses lama belum dapat dipastikan.')
         lock.unlink()
     with lock.open('x') as f: f.write(str(os.getpid()))
     try:

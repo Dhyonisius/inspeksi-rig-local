@@ -1,0 +1,27 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: inspeksi-rig-approved-route
+parameters:
+  - name: HOSTNAME
+    required: true
+    description: Internal DNS hostname and ingress/router approved by the platform team; no scheme or path.
+objects:
+  - apiVersion: route.openshift.io/v1
+    kind: Route
+    metadata:
+      name: inspeksi-rig
+      annotations:
+        haproxy.router.openshift.io/timeout: 300s
+    spec:
+      host: ${HOSTNAME}
+      to:
+        kind: Service
+        name: inspeksi-rig
+      port:
+        targetPort: http
+      tls:
+        termination: edge
+        insecureEdgeTerminationPolicy: Redirect
+# This does not make the router private. Apply only after IT confirms that this
+# host is admitted by an internal router and its default certificate is trusted.

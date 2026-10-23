@@ -14,6 +14,10 @@
 !deploy/
 !deploy/container/
 !deploy/container/requirements.txt
+!deploy/container/requirements-training.txt
+!deploy/container/ca/
+!deploy/container/ca/*.crt
+!deploy/container/ca/README.md
 **/__pycache__/**
 **/*.pyc
 **/*.log
