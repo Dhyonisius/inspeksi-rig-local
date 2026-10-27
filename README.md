@@ -1,5 +1,11 @@
 # Inspeksi Rig Lokal
 
+## Panduan untuk mentor
+
+**[Buka Panduan Mentor](PANDUAN-MENTOR.md)** — gambaran proyek, langkah menjalankan dari GitHub pada Windows, konfigurasi SQL/Ollama, checklist pengujian, dan jalur deployment OpenShift.
+
+Panduan dapat dibaca langsung di GitHub. Untuk memakai aplikasi, jalankan server beserta layanan pendukung pada perangkat penguji atau lingkungan perusahaan.
+
 ## Deployment OpenShift perusahaan
 
 Lihat [panduan deployment dari GitHub ke OpenShift](docs/deploy-openshift.md). Gunakan **Dockerfile**, bukan Python S2I. Build image dapat dikerjakan sebelum SQL Server dan Ollama perusahaan tersedia; fungsi inspeksi membutuhkan kedua layanan tersebut dan PVC. Manifest tidak mengunci namespace perusahaan. Paket deployment belum diuji pada cluster tujuan.
