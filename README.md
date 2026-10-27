@@ -1,8 +1,8 @@
 # Inspeksi Rig Lokal
 
-## Panduan untuk mentor
+## Panduan menjalankan
 
-**[Buka Panduan Mentor](PANDUAN-MENTOR.md)** — gambaran proyek, langkah menjalankan dari GitHub pada Windows, konfigurasi SQL/Ollama, checklist pengujian, dan jalur deployment OpenShift.
+**[Buka Panduan Menjalankan](PANDUAN-MENJALANKAN.md)** — gambaran proyek, langkah menjalankan dari GitHub pada Windows, konfigurasi SQL/Ollama, checklist pengujian, dan jalur deployment OpenShift.
 
 Panduan dapat dibaca langsung di GitHub. Untuk memakai aplikasi, jalankan server beserta layanan pendukung pada perangkat penguji atau lingkungan perusahaan.
 
