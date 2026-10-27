@@ -1,16 +1,16 @@
-# Panduan Mentor — Lentera K3 / Inspeksi Visual Rig
+# Panduan Menjalankan — Lentera K3 / Inspeksi Visual Rig
 
-Panduan ini dapat dibaca langsung di GitHub. Untuk meninjau proyek, mentor cukup membuka tautan ini. Untuk mencoba aplikasinya, ikuti langkah Windows di bawah atau panduan OpenShift.
+Panduan ini menjelaskan cara menjalankan aplikasi dari repository GitHub pada Windows dan menyediakan jalur deployment OpenShift perusahaan.
 
 **Repository:** [Dhyonisius/inspeksi-rig-local](https://github.com/Dhyonisius/inspeksi-rig-local)  
 **Tanggal panduan:** 27 Oktober 2026  
-**Tujuan:** membantu mentor meninjau dan menjalankan salinan kode dari GitHub.
+**Tujuan:** membantu pengguna menyiapkan, menjalankan, dan menguji salinan kode dari GitHub.
 
-> **Status pengujian:** aplikasi lokal pada laptop pengembang telah merespons HTTP 200. Panduan ini disusun dari kode repository dan konfigurasi lokal yang diperiksa. Instalasi baru pada komputer mentor, build container, dan deployment OpenShift perusahaan belum divalidasi dalam penyusunan panduan ini.
+> **Status pengujian:** aplikasi lokal pada laptop pengembang telah merespons HTTP 200. Panduan ini disusun dari kode repository dan konfigurasi lokal yang diperiksa. Instalasi baru pada komputer pengguna, build container, dan deployment OpenShift perusahaan belum divalidasi dalam penyusunan panduan ini.
 
-## 1. Mulai dari sini
+## 1. Pilih cara menjalankan
 
-| Keperluan mentor | Yang dibuka atau dilakukan |
+| Keperluan pengguna | Yang dibuka atau dilakukan |
 |---|---|
 | Membaca gambaran proyek | Bagian 2 di bawah |
 | Meninjau kode | [Server](server.js), [antarmuka](public/), [skrip pendukung](scripts/), dan [skema database](sql/) |
@@ -18,7 +18,7 @@ Panduan ini dapat dibaca langsung di GitHub. Untuk meninjau proyek, mentor cukup
 | Menjalankan pada OpenShift perusahaan | Baca [panduan deployment OpenShift](docs/deploy-openshift.md) |
 | Meninjau alur pembelajaran foto | Baca [panduan pembelajaran berbantuan AI](docs/pembelajaran-berbantuan-ai.md) |
 
-GitHub menyediakan kode dan panduan. Tautan GitHub ini belum merupakan alamat aplikasi yang sudah dihosting. Alamat `http://127.0.0.1:3180` menunjuk komputer yang membukanya; mentor perlu menjalankan server di komputernya agar alamat tersebut berfungsi.
+GitHub menyediakan kode dan panduan. Tautan GitHub ini belum merupakan alamat aplikasi yang sudah dihosting. Alamat `http://127.0.0.1:3180` menunjuk komputer yang membukanya; pengguna perlu menjalankan server di komputernya agar alamat tersebut berfungsi.
 
 ## 2. Gambaran proyek
 
@@ -146,7 +146,7 @@ Invoke-RestMethod http://127.0.0.1:3180/api/health
 
 Target: properti `database` bernilai `ready`. Halaman yang terbuka atau HTTP 200 saja belum membuktikan database dan analisis AI berfungsi.
 
-**Catatan peluncur:** `start-local.cmd` dan `start-local.ps1` yang sudah ada masih mengandalkan struktur runtime laptop asal. Pada komputer mentor, gunakan konfigurasi eksplisit di atas.
+**Catatan peluncur:** `start-local.cmd` dan `start-local.ps1` yang sudah ada masih mengandalkan struktur runtime laptop asal. Pada komputer pengguna, gunakan konfigurasi eksplisit di atas.
 
 Untuk berhenti, tekan **Ctrl+C** pada terminal server. Untuk menjalankan kembali, buka PowerShell di folder repository dan ulangi konfigurasi bagian ini; variabel lingkungan tersebut berlaku untuk sesi terminal tersebut.
 
@@ -174,7 +174,7 @@ Lakukan satu uji dengan foto rig yang diizinkan untuk pengujian:
 
 Gunakan tabel ini untuk mencatat pengujian aktual:
 
-| Pemeriksaan | Hasil yang diharapkan | Hasil mentor |
+| Pemeriksaan | Hasil yang diharapkan | Hasil pengujian |
 |---|---|---|
 | Server aplikasi | Halaman login terbuka | Belum diuji |
 | Database | `/api/health` menunjukkan `database: ready` | Belum diuji |
@@ -224,7 +224,3 @@ Ringkasan alurnya:
 6. Jalankan satu replica, buat akses HTTPS sesuai kebijakan perusahaan, lalu uji login, analisis, dan riwayat.
 
 Build image yang sukses belum membuktikan analisis dan penyimpanan berhasil. Pengujian fungsi tetap dilakukan setelah layanan pendukung tersedia.
-
-## 11. Pesan pengantar untuk mentor
-
-> Pak/Bu, berikut repository aplikasi Lentera K3 untuk inspeksi visual rig. Panduan ini memuat gambaran sistem, kebutuhan instalasi, langkah menjalankan dari GitHub, dan checklist pengujian. Aplikasi sudah dapat dibuka pada laptop pengembang; instalasi di perangkat baru dan deployment perusahaan masih perlu divalidasi. Silakan meninjau panduan ini, kemudian mengikuti jalur Windows lokal atau OpenShift sesuai lingkungan pengujian.
