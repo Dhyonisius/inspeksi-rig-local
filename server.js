@@ -24,6 +24,8 @@ import { createRigTrainingApi } from './scripts/rig-training-api.js';
 import { createAnnotationLearning } from './scripts/annotation-learning.js';
 import { createAnnotationJobs } from './scripts/annotation-jobs.js';
 import { createProtectCurationApi } from './scripts/protect-curation-api.js';
+import { createPdfHub } from './scripts/pdf-hub.js';
+import { createVlmLearning } from './scripts/vlm-learning.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(root, 'public');
@@ -309,6 +311,8 @@ const areaInScope = (name,type) => areaCatalog.some(a => a.name===name && a.area
 const analyzeWithOllama = createVisionAnalyzer({ baseUrl: ollamaBaseUrl, listModels: listOllamaVisionModels, prepareImage: prepareInferenceImage, monitor: performanceMonitor, getExamples: verifiedExamples });
 
 const featureContext = { jsonQuery, executeSql, databaseName, sqlText, sqlAscii, intValue, httpError, jsonBody, sendJson, send, sanitizePhotoBinary, analyzeWithOllama, listOllamaVisionModels, uploadDir, privateDir, root, audit, withInferenceLock, withDatasetReadLock, fetchInspectionConfig, prepareInferenceImage, performanceMonitor, isDatasetDeletionActive: () => datasetDeletions.size > 0 };
+const pdfHub = createPdfHub({ root, privateDir, jsonBody, sendJson, httpError, ollamaBaseUrl, withInferenceLock });
+const vlmLearning = createVlmLearning({root,privateDir,hub:pdfHub,jsonBody,sendJson,httpError});
 const protectCurationApi = createProtectCurationApi({ ...featureContext, withDatasetMutationLock });
 const datasetTools = createDatasetTools(featureContext);
 const rigTrainingApi = createRigTrainingApi(featureContext, datasetTools);
@@ -330,6 +334,8 @@ async function handleApi(request, response, url) {
     return sendJson(response, 200, { app: 'Inspeksi Visual', host, api_version: 15, deployment_mode: production ? 'server' : 'local', ...(production ? { database: health.database, error: health.database === 'ready' ? undefined : 'Database belum siap. Hubungi administrator.' } : health) });
   }
   const user = pathname === '/api/auth/login' ? null : requireUser(request);
+  if (user && await pdfHub.handle(request, response, url, user)) return;
+  if (user && await vlmLearning.handle(request,response,url,user)) return;
   if (user && await protectCurationApi(request, response, url, user)) return;
   if (user && await rigTrainingApi(request, response, url, user)) return;
   if (user && await annotationJobs(request, response, url, user)) return;
@@ -760,6 +766,7 @@ const server = http.createServer(async (incoming, response) => {
 });
 
 await bootstrapDatabase();
+await vlmLearning.initialize();vlmLearning.enableScheduler();
 await rigTrainingApi.initialize();
 await annotationJobs.initialize();
 if(databaseReady)await annotationLearning.prepareAreas().catch(error=>console.warn('[learning] Area PDF belum dapat disiapkan:',error.message));
@@ -778,6 +785,6 @@ if (production) {
 }
 
 for (const signal of ['SIGINT','SIGTERM']) process.on(signal, () => {
-  annotationJobs.stop(); rigTrainingApi.stop(); performanceMonitor.close();
+  vlmLearning.dispose(); pdfHub.dispose(); annotationJobs.stop(); rigTrainingApi.stop(); performanceMonitor.close();
   server.close(() => process.exit(0));
 });
