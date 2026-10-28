@@ -28,3 +28,9 @@ Thumbs.db
 *.secret.yaml
 *.secret.json
 /deploy/openshift/*.local.*
+
+# Keep credentials and model artifacts outside source control.
+/deploy/openshift-company/*.local.*
+*.safetensors
+*.crt
+*.cer
