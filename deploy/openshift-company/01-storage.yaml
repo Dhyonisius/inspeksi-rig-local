@@ -1,0 +1,22 @@
+# Apply only in your assigned project. Follow PANDUAN-DEPLOY-OPENSHIFT-PERUSAHAAN.md.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: inspeksi-rig-storage
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: inspeksi-sql-storage
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi

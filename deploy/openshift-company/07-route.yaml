@@ -1,0 +1,14 @@
+# Apply only in your assigned project. Follow PANDUAN-DEPLOY-OPENSHIFT-PERUSAHAAN.md.
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: inspeksi-rig
+spec:
+  to:
+    kind: Service
+    name: inspeksi-rig
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

@@ -1,0 +1,29 @@
+# Apply only in your assigned project. Follow PANDUAN-DEPLOY-OPENSHIFT-PERUSAHAAN.md.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inspeksi-rig-config
+data:
+  SQL_SERVER: tcp:inspeksi-sql,1433
+  SQL_ENCRYPT: mandatory
+  SQL_TRUST_SERVER_CERTIFICATE: 'false'
+  SQL_MIGRATE_ON_START: 'false'
+  APP_ORIGIN: https://CHANGE_ME.invalid
+  OLLAMA_BASE_URL: http://CHANGE_ME.invalid:11434
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inspeksi-sql-config
+data:
+  mssql.conf: '[network]
+
+    tlscert = /var/opt/mssql/tls/tls.crt
+
+    tlskey = /var/opt/mssql/tls/tls.key
+
+    tlsprotocols = 1.2
+
+    forceencryption = 1
+
+    '

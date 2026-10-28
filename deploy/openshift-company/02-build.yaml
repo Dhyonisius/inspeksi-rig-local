@@ -1,0 +1,43 @@
+# Apply only in your assigned project. Follow PANDUAN-DEPLOY-OPENSHIFT-PERUSAHAAN.md.
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: inspeksi-rig
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: inspeksi-rig
+spec:
+  runPolicy: Serial
+  successfulBuildsHistoryLimit: 2
+  failedBuildsHistoryLimit: 2
+  source:
+    type: Git
+    git:
+      uri: https://github.com/Dhyonisius/inspeksi-rig-local.git
+      ref: main
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+      forcePull: true
+      buildArgs:
+      - name: ACCEPT_SQLTOOLS_EULA
+        value: 'N'
+      - name: INSTALL_RIG_TRAINING
+        value: 'false'
+      - name: INSTALL_VLM_TRAINING
+        value: 'false'
+  output:
+    to:
+      kind: ImageStreamTag
+      name: inspeksi-rig:latest
+  triggers: []
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: '2'
+      memory: 4Gi

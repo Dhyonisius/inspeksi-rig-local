@@ -1,5 +1,7 @@
 # Panduan Menjalankan — Lentera K3 / Inspeksi Visual Rig
 
+Untuk SQL Server yang dijalankan **di dalam project OpenShift**, ikuti [Panduan Deploy OpenShift Perusahaan](PANDUAN-DEPLOY-OPENSHIFT-PERUSAHAAN.md). Panduan tersebut menyediakan langkah console untuk penyimpanan, Secret, SQL, dan aplikasi. Instruksi SQL eksternal di bawah tetap berlaku untuk skenario database yang sudah tersedia.
+
 Panduan ini menjelaskan cara menjalankan aplikasi dari repository GitHub pada Windows dan menyediakan jalur deployment OpenShift perusahaan.
 
 **Repository:** [Dhyonisius/inspeksi-rig-local](https://github.com/Dhyonisius/inspeksi-rig-local)  

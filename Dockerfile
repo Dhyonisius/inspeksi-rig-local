@@ -3,6 +3,7 @@ FROM node:22-bookworm-slim
 # Set to Y only after your organization approves the Microsoft SQL tools license.
 ARG ACCEPT_SQLTOOLS_EULA=N
 ARG INSTALL_RIG_TRAINING=false
+ARG INSTALL_VLM_TRAINING=false
 USER root
 RUN if [ "$ACCEPT_SQLTOOLS_EULA" != Y ]; then \
       echo >&2 'SQL tools license approval required: set ACCEPT_SQLTOOLS_EULA=Y only after authorized approval.'; exit 1; \
@@ -25,6 +26,13 @@ RUN if [ "$ACCEPT_SQLTOOLS_EULA" != Y ]; then \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+COPY deploy/container/vlm-requirements.txt /tmp/vlm-requirements.txt
+RUN case "$INSTALL_VLM_TRAINING" in true|false) ;; *) exit 1;; esac \
+    && if [ "$INSTALL_VLM_TRAINING" = true ]; then \
+         python3 -m venv /opt/vlm \
+         && /opt/vlm/bin/pip install --no-cache-dir 'torch==2.8.0' 'torchvision==0.23.0' --index-url https://download.pytorch.org/whl/cpu \
+         && /opt/vlm/bin/pip install --no-cache-dir -r /tmp/vlm-requirements.txt; \
+       fi
 COPY deploy/container/requirements.txt /tmp/requirements.txt
 RUN python3 -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt \
@@ -48,6 +56,7 @@ ENV NODE_ENV=production HOST=0.0.0.0 PORT=8080 \
     SQL_MIGRATE_ON_START=false SQL_ENCRYPT=mandatory SQL_TRUST_SERVER_CERTIFICATE=false \
     PYTHON_EXE=/opt/venv/bin/python DETECTOR_PYTHON_EXE=/opt/training/bin/python \
     RIG_TRAINING_PYTHON_EXE=/opt/training/bin/python \
+    VLM_TRAIN_PYTHON=/opt/vlm/bin/python \
     PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 HOME=/tmp
 EXPOSE 8080
 USER 1001

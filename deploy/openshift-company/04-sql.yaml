@@ -1,0 +1,147 @@
+# Apply only in your assigned project. Follow PANDUAN-DEPLOY-OPENSHIFT-PERUSAHAAN.md.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inspeksi-sql
+spec:
+  replicas: 0
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: inspeksi-sql
+  template:
+    metadata:
+      labels:
+        app: inspeksi-sql
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+      - name: prepare-sql-tls
+        image: mcr.microsoft.com/mssql/rhel/server:2022-latest
+        command:
+        - /bin/bash
+        - -ec
+        - umask 077; mkdir -p /var/opt/mssql/tls; cp /input/tls.crt /var/opt/mssql/tls/tls.crt;
+          cp /input/tls.key /var/opt/mssql/tls/tls.key; chmod 600 /var/opt/mssql/tls/tls.*;
+          cp /config/mssql.conf /var/opt/mssql/mssql.conf
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        volumeMounts:
+        - name: sql-storage
+          mountPath: /var/opt/mssql
+        - name: sql-tls
+          mountPath: /input
+          readOnly: true
+        - name: sql-config
+          mountPath: /config
+          readOnly: true
+      containers:
+      - name: sql
+        image: mcr.microsoft.com/mssql/rhel/server:2022-latest
+        ports:
+        - name: sql
+          containerPort: 1433
+        env:
+        - name: ACCEPT_EULA
+          value: 'N'
+        - name: MSSQL_PID
+          value: Developer
+        - name: MSSQL_MEMORY_LIMIT_MB
+          value: '3072'
+        - name: MSSQL_SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: inspeksi-sql-admin
+              key: SQL_PASSWORD
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+            add:
+            - NET_BIND_SERVICE
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            cpu: '2'
+            memory: 4Gi
+        startupProbe:
+          tcpSocket:
+            port: sql
+          periodSeconds: 10
+          failureThreshold: 90
+        readinessProbe:
+          tcpSocket:
+            port: sql
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: sql
+          periodSeconds: 30
+          failureThreshold: 5
+        volumeMounts:
+        - name: sql-storage
+          mountPath: /var/opt/mssql
+      volumes:
+      - name: sql-storage
+        persistentVolumeClaim:
+          claimName: inspeksi-sql-storage
+      - name: sql-tls
+        secret:
+          secretName: inspeksi-sql-tls
+          defaultMode: 288
+      - name: sql-config
+        configMap:
+          name: inspeksi-sql-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inspeksi-sql
+spec:
+  selector:
+    app: inspeksi-sql
+  ports:
+  - name: sql
+    port: 1433
+    targetPort: sql
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: inspeksi-sql-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app: inspeksi-sql
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: inspeksi-rig
+    - podSelector:
+        matchLabels:
+          app: inspeksi-rig-bootstrap
+    ports:
+    - protocol: TCP
+      port: 1433

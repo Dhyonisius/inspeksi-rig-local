@@ -1,0 +1,152 @@
+# Apply only in your assigned project. Follow PANDUAN-DEPLOY-OPENSHIFT-PERUSAHAAN.md.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inspeksi-rig
+spec:
+  replicas: 0
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: inspeksi-rig
+  template:
+    metadata:
+      labels:
+        app: inspeksi-rig
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 40
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+      - name: prepare-storage
+        image: CHANGE_ME_APP_IMAGE_DIGEST
+        command:
+        - node
+        - -e
+        - const fs=require('fs');for(const p of ['data/private','models'])fs.mkdirSync('/storage/'+p,{recursive:true});
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        volumeMounts:
+        - name: storage
+          mountPath: /storage
+      - name: prepare-sql-trust
+        image: CHANGE_ME_APP_IMAGE_DIGEST
+        command:
+        - node
+        - -e
+        - const fs=require('fs');fs.writeFileSync('/trust/ca-certificates.crt',fs.readFileSync('/etc/ssl/certs/ca-certificates.crt','utf8')+'\n'+fs.readFileSync('/company-ca/ca.crt','utf8')+'\n');
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        volumeMounts:
+        - name: sql-trust
+          mountPath: /trust
+        - name: company-ca
+          mountPath: /company-ca
+          readOnly: true
+      containers:
+      - name: app
+        image: CHANGE_ME_APP_IMAGE_DIGEST
+        ports:
+        - containerPort: 8080
+          name: http
+        envFrom:
+        - configMapRef:
+            name: inspeksi-rig-config
+        - secretRef:
+            name: inspeksi-rig-sql
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        startupProbe:
+          httpGet:
+            path: /livez
+            port: http
+          periodSeconds: 10
+          failureThreshold: 180
+        livenessProbe:
+          httpGet:
+            path: /livez
+            port: http
+          periodSeconds: 20
+          timeoutSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: http
+          periodSeconds: 10
+          timeoutSeconds: 3
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: '1'
+            memory: 2Gi
+        volumeMounts:
+        - name: storage
+          mountPath: /app/data
+          subPath: data
+        - name: storage
+          mountPath: /app/models
+          subPath: models
+        - name: temporary
+          mountPath: /tmp
+        - name: sql-trust
+          mountPath: /etc/ssl/certs/ca-certificates.crt
+          subPath: ca-certificates.crt
+          readOnly: true
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: inspeksi-rig-storage
+      - name: temporary
+        emptyDir:
+          sizeLimit: 512Mi
+      - name: sql-trust
+        emptyDir:
+          sizeLimit: 8Mi
+      - name: company-ca
+        configMap:
+          name: inspeksi-sql-ca
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inspeksi-rig
+spec:
+  selector:
+    app: inspeksi-rig
+  ports:
+  - name: http
+    port: 8080
+    targetPort: http

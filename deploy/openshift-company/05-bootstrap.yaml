@@ -1,0 +1,94 @@
+# Apply only in your assigned project. Follow PANDUAN-DEPLOY-OPENSHIFT-PERUSAHAAN.md.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: inspeksi-rig-bootstrap
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 1800
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: initialize
+        image: CHANGE_ME_APP_IMAGE_DIGEST
+        command:
+        - node
+        - scripts/openshift-company-bootstrap.js
+        envFrom:
+        - configMapRef:
+            name: inspeksi-rig-config
+        - secretRef:
+            name: inspeksi-sql-admin
+        - secretRef:
+            name: inspeksi-rig-admin-bootstrap
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: temporary
+          mountPath: /tmp
+        - name: sql-trust
+          mountPath: /etc/ssl/certs/ca-certificates.crt
+          subPath: ca-certificates.crt
+          readOnly: true
+        env:
+        - name: APP_SQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: inspeksi-rig-sql
+              key: SQL_PASSWORD
+      volumes:
+      - name: temporary
+        emptyDir: {}
+      - name: sql-trust
+        emptyDir:
+          sizeLimit: 8Mi
+      - name: company-ca
+        configMap:
+          name: inspeksi-sql-ca
+      initContainers:
+      - name: prepare-sql-trust
+        image: CHANGE_ME_APP_IMAGE_DIGEST
+        command:
+        - node
+        - -e
+        - const fs=require('fs');fs.writeFileSync('/trust/ca-certificates.crt',fs.readFileSync('/etc/ssl/certs/ca-certificates.crt','utf8')+'\n'+fs.readFileSync('/company-ca/ca.crt','utf8')+'\n');
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        volumeMounts:
+        - name: sql-trust
+          mountPath: /trust
+        - name: company-ca
+          mountPath: /company-ca
+          readOnly: true
+    metadata:
+      labels:
+        app: inspeksi-rig-bootstrap

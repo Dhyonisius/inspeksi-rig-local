@@ -8,7 +8,9 @@ Panduan dapat dibaca langsung di GitHub. Untuk memakai aplikasi, jalankan server
 
 ## Deployment OpenShift perusahaan
 
-Lihat [panduan deployment dari GitHub ke OpenShift](docs/deploy-openshift.md). Gunakan **Dockerfile**, bukan Python S2I. Build image dapat dikerjakan sebelum SQL Server dan Ollama perusahaan tersedia; fungsi inspeksi membutuhkan kedua layanan tersebut dan PVC. Manifest tidak mengunci namespace perusahaan. Paket deployment belum diuji pada cluster tujuan.
+Mulai dari **[Panduan Deploy OpenShift Perusahaan](PANDUAN-DEPLOY-OPENSHIFT-PERUSAHAAN.md)** untuk menempatkan aplikasi dan SQL Server dalam satu project. Panduan memuat langkah console untuk dua PVC, Secret, TLS SQL, build Dockerfile, bootstrap admin, dan Route HTTPS. Paket belum diterapkan atau diuji di cluster perusahaan. Untuk SQL yang sudah dikelola di luar project, gunakan [panduan SQL eksternal](docs/deploy-openshift.md).
+
+Menu **AI Inspeksi Visual** kini mencakup pengambilan dataset PDF dan kartu peralatan **NOT_READY / perlu diganti** berdasarkan laporan terbaru per rig. Baca [alur dataset PDF dan percobaan VLM](PANDUAN-ALUR-DATA-DAN-VLM.md). Trainer percobaan tidak diaktifkan pada build perusahaan dasar.
 
 Alur terbaru: unggah banyak foto, usulan AI, koreksi kotak, antrean prioritas, dan model rig sebagai pendamping Gemma. Lihat [panduan pembelajaran berbantuan AI](docs/pembelajaran-berbantuan-ai.md).
 
