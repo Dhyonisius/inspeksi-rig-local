@@ -1,9 +1,14 @@
-# Varian Ubuntu 22.04 (jammy).
-# Dipilih karena kebijakan perusahaan melarang base image Debian, dan
-# repositori Microsoft untuk msodbcsql18 + mssql-tools18 tersedia resmi di jammy.
+# Varian Ubuntu 22.04 (jammy) — kebijakan perusahaan melarang base image Debian.
 #
-# Node.js diambil dari tarball resmi nodejs.org dengan verifikasi SHA-256,
-# bukan dari PPA pihak ketiga. Pin versi agar build reprodusibel.
+# sqlcmd + ODBC Driver 18 diambil dari image SQL Server resmi Microsoft
+# (multi-stage), BUKAN dari packages.microsoft.com. Alasannya: repositori itu
+# mengalihkan sebagian paket ke pmc-geofence.trafficmanager.net, dan host itu
+# ditolak oleh proxy/TLS perusahaan ("certificate is NOT trusted").
+# Image SQL Server sendiri sudah berisi /opt/mssql-tools18 dan /opt/microsoft.
+#
+# Node.js diambil dari tarball resmi nodejs.org dengan verifikasi SHA-256.
+FROM mcr.microsoft.com/mssql/server:2022-latest AS sqltools
+
 FROM ubuntu:22.04
 
 ARG ACCEPT_SQLTOOLS_EULA=N
@@ -32,12 +37,14 @@ RUN set -eux; \
     case "$INSTALL_RIG_TRAINING" in true|false) ;; *) echo >&2 'INSTALL_RIG_TRAINING must be true or false'; exit 1 ;; esac; \
     case "$INSTALL_VLM_TRAINING" in true|false) ;; *) echo >&2 'INSTALL_VLM_TRAINING must be true or false'; exit 1 ;; esac
 
+# libodbc2 + libodbcinst2 + libltdl7 adalah dependensi sqlcmd dan ODBC Driver 18.
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-      ca-certificates curl xz-utils gnupg \
+      ca-certificates curl xz-utils \
       python3 python3-venv \
-      libgomp1 libgl1 libglib2.0-0 libgssapi-krb5-2; \
+      libgomp1 libgl1 libglib2.0-0 libgssapi-krb5-2 \
+      libodbc2 libodbcinst2 libltdl7 libstdc++6; \
     rm -rf /var/lib/apt/lists/*
 
 # Node.js resmi + verifikasi checksum.
@@ -51,16 +58,13 @@ RUN set -eux; \
     rm -f "node-v${NODE_VERSION}-linux-${node_arch}.tar.xz" SHASUMS256.txt; \
     node --version; npm --version
 
-# Microsoft ODBC Driver 18 + sqlcmd (satu-satunya jalur database aplikasi).
+# sqlcmd + ODBC Driver 18 dari image SQL Server (tanpa packages.microsoft.com).
+COPY --from=sqltools /opt/mssql-tools18 /opt/mssql-tools18
+COPY --from=sqltools /opt/microsoft /opt/microsoft
 RUN set -eux; \
-    curl -fsSL --retry 3 --connect-timeout 30 --max-time 180 \
-      https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -o /tmp/microsoft.deb; \
-    dpkg -i /tmp/microsoft.deb; \
-    rm -f /tmp/microsoft.deb; \
-    apt-get update; \
-    ACCEPT_EULA="$ACCEPT_SQLTOOLS_EULA" DEBIAN_FRONTEND=noninteractive \
-      apt-get install -y --no-install-recommends msodbcsql18 mssql-tools18; \
-    rm -rf /var/lib/apt/lists/*; \
+    printf '[ODBC Driver 18 for SQL Server]\nDescription=Microsoft ODBC Driver 18 for SQL Server\nDriver=/opt/microsoft/msodbcsql18/lib64/libmsodbcsql-18.7.so.1.1\nUsageCount=1\n' > /etc/odbcinst.ini; \
+    ! ldd /opt/mssql-tools18/bin/sqlcmd | grep -q "not found"; \
+    ! ldd /opt/microsoft/msodbcsql18/lib64/libmsodbcsql-18.7.so.1.1 | grep -q "not found"; \
     /opt/mssql-tools18/bin/sqlcmd -? > /dev/null 2>&1 || true
 
 WORKDIR /app

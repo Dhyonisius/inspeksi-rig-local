@@ -22,13 +22,24 @@ Tidak ada namespace perusahaan yang ditulis dalam manifest. Semua resource masuk
 
 Minta administrator memberikan project latihan, akses BuildConfig/ImageStream, registry image internal aktif, kuota build, dan izin keluar ke GitHub serta sumber paket/image. Tidak perlu meminta akses administrator cluster atau SCC `anyuid` untuk image aplikasi ini. Image disiapkan untuk UID acak/non-root. Database terpisah memiliki persyaratan deployment sendiri.
 
-Dockerfile memakai **Ubuntu 22.04 LTS** — kebijakan perusahaan melarang base image Debian. Node.js 22 diambil dari tarball resmi `nodejs.org` dengan verifikasi SHA-256 (bukan dari apt, karena paket `nodejs` Ubuntu 22.04 masih versi 12), ditambah Microsoft ODBC/sqlcmd 18 dan virtualenv Python dengan Pillow/PyMuPDF. Builder membutuhkan akses ke Docker Hub (base image), `archive.ubuntu.com` dan `security.ubuntu.com`, `nodejs.org`, `packages.microsoft.com`, dan PyPI beserta host unduhan paketnya. Untuk jaringan terisolasi, administrator harus menyediakan mirror/base image yang disetujui dan CA perusahaan. Jangan menonaktifkan validasi TLS untuk mengatasi proxy/sertifikat perusahaan.
+Dockerfile memakai **Ubuntu 22.04 LTS** — kebijakan perusahaan melarang base image Debian. Node.js 22 diambil dari tarball resmi `nodejs.org` dengan verifikasi SHA-256 (bukan dari apt, karena paket `nodejs` Ubuntu 22.04 masih versi 12). **sqlcmd + ODBC Driver 18 diambil dari image `mcr.microsoft.com/mssql/server:2022-latest` lewat multi-stage COPY**, bukan dari `packages.microsoft.com`. Builder membutuhkan akses ke Docker Hub (base image), `archive.ubuntu.com` dan `security.ubuntu.com`, `nodejs.org`, `mcr.microsoft.com` (image SQL Server), dan PyPI beserta host unduhan paketnya. Untuk jaringan terisolasi, administrator harus menyediakan mirror/base image yang disetujui dan CA perusahaan. Jangan menonaktifkan validasi TLS untuk mengatasi proxy/sertifikat perusahaan.
 
 SQL tools memerlukan persetujuan lisensi Microsoft. Build sengaja tidak berjalan dengan `ACCEPT_SQLTOOLS_EULA=N`. Terapkan patch persetujuan di bawah hanya jika perusahaan mengizinkannya. Dependensi rentang versi perlu dikunci ke versi/digest hasil build yang disetujui setelah validasi perusahaan.
 
+### Mengapa packages.microsoft.com tidak dipakai
+
+Pada build di cluster perusahaan, repositori itu mengalihkan `mssql-tools18` ke `pmc-geofence.trafficmanager.net`, dan host tersebut ditolak proxy/TLS perusahaan:
+
+```text
+Certificate verification failed: The certificate is NOT trusted.
+The certificate issuer is unknown. ... Err:2 ... mssql-tools18
+```
+
+Image SQL Server resmi sudah memuat `/opt/mssql-tools18` dan `/opt/microsoft/msodbcsql18`, jadi Dockerfile menyalin keduanya (`COPY --from=sqltools`). Dependensi sistem (`libodbc2`, `libodbcinst2`, `libltdl7`) tetap dari apt Ubuntu, dan driver didaftarkan lewat `/etc/odbcinst.ini`. Konsekuensinya builder harus dapat menarik image SQL Server (~2,35 GB) — praktis sudah ada karena SQL Server berjalan di project yang sama.
+
 ### Kegagalan unduh paket (apt/PyPI) dan batas perbaikan
 
-Base image Ubuntu sudah memakai repositori HTTPS dan membawa `ca-certificates`, jadi Dockerfile tidak mengubah sumber paket sistem. Repositori Microsoft ditambahkan lewat paket `packages-microsoft-prod.deb` resmi. Base image dengan CA perusahaan tetap diperlukan bila proxy melakukan inspeksi TLS. Validasi TLS dan tanda tangan paket APT tetap aktif. Retry dibatasi tiga kali dan update APT gagal jika ada indeks yang gagal diunduh, sehingga build tidak diam-diam memakai indeks lama.
+Base image Ubuntu sudah memakai repositori HTTPS dan membawa `ca-certificates`, jadi Dockerfile tidak mengubah sumber paket sistem. Base image dengan CA perusahaan tetap diperlukan bila proxy melakukan inspeksi TLS. Validasi TLS dan tanda tangan paket APT tetap aktif. Retry dibatasi tiga kali dan update APT gagal jika ada indeks yang gagal diunduh, sehingga build tidak diam-diam memakai indeks lama.
 
 HTTP 503 sendiri belum membuktikan penyebabnya: bisa berasal dari mirror, proxy, atau gateway perusahaan. HTTPS mengatasi jalur HTTP yang bermasalah bila HTTPS diizinkan, tetapi tidak menjamin akses jaringan. Jika masih gagal, kirim ke IT waktu kejadian, nama build, host/URL paket dan status dari log yang telah disanitasi. IT perlu memeriksa egress builder, proxy, CA, serta mirror/registry yang disetujui. Jangan mengganti DNS, firewall, proxy perusahaan, `Verify-Peer`, atau `trusted=yes` untuk meloloskan build.
 
