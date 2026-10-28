@@ -66,6 +66,8 @@ Minta tim IT/PKI memberikan sertifikat server beserta private key PEM untuk DNS 
 4. Isi `OLLAMA_BASE_URL` pada ConfigMap `inspeksi-rig-config` dengan alamat layanan Ollama yang dapat dijangkau pod. `localhost` di dalam pod menunjuk pod itu sendiri, bukan laptop. Endpoint dummy `CHANGE_ME.invalid` harus diganti sebelum fungsi AI digunakan. Sesuaikan autentikasi/network policy dengan IT bila layanan perusahaan tidak langsung kompatibel dengan API Ollama.
 5. `APP_ORIGIN` diisi setelah Route tersedia pada tahap 5.
 
+Untuk sumber PDF otomatis, setelah host sumber asli diketahui, tambahkan `PDF_SOURCE_ALLOWED_HOSTS` pada ConfigMap dengan hostname yang diizinkan (sertakan port bila bukan port standar, pisahkan beberapa host dengan koma). Pakai HTTPS. Masukkan tautan sumber pada konfigurasi aplikasi setelah login. Endpoint yang memerlukan autentikasi atau tombol ekspor JavaScript khusus perlu integrasi tersendiri; tautan/API asli belum diverifikasi dalam paket ini.
+
 Jika Ollama belum tersedia, UI dan fitur berbasis database dapat dipasang terlebih dahulu, tetapi analisis foto dan jawaban generatif belum berfungsi. Mintalah endpoint dan model visi yang sesuai kepada tim AI/IT; model yang dipilih melalui aplikasi harus tersedia di endpoint itu. Pelatihan VLM percobaan dinonaktifkan dalam build perusahaan ini; instalasi model dan worker pelatihan memerlukan penyiapan terpisah.
 
 Jangan mengunggah password, private key, ekspor Secret, atau konfigurasi internal ke GitHub. Semua contoh repository berisi nama referensi, bukan nilai rahasia.

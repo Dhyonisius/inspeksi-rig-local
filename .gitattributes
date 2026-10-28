@@ -1,4 +1,4 @@
-﻿# Normalisasi line ending: LF di repository, aman untuk build Linux/OpenShift.
+# Normalisasi line ending: LF di repository, aman untuk build Linux/OpenShift.
 * text=auto eol=lf
 *.png binary
 *.jpg binary
