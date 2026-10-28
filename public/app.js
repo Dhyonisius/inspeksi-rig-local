@@ -9,6 +9,7 @@
   titles.evaluation = 'Evaluasi model';
   titles.learning = 'Belajar dari foto'; titles['rig-dataset'] = 'PDF rig dan calon pelatihan';
   titles['protect-curation'] = 'Kurasi foto Protect';
+  titles['inspection-ai'] = 'AI Inspeksi Visual'; titles['pdf-library'] = 'Dataset PDF';
   state.inspectionProfile = 'hemat';
   let toastTimer, pageController, renderGeneration = 0, healthGeneration = 0;
   let inspectionFlight = null, loginFlight = false, logoutFlight = null, authGeneration = 0;
@@ -757,7 +758,12 @@
       else if (view === 'analysis-detail') await renderAnalysisDetail(context);
       else if (view === 'datasets') await renderDatasets(context);
       else if (view === 'dataset-detail') await renderDatasetItems(context);
-      else if (view === 'settings') await renderSettings(context);
+      else if (view === 'settings') {
+        await renderSettings(context);
+        if (context.isCurrent()) { const slot=document.createElement('div');slot.className='pdf-settings-slot';root.prepend(slot);pageController=window.InspectionHub.mountSource({root:slot,api,user:state.user}); }
+      }
+      else if (view === 'inspection-ai') pageController=window.InspectionHub.mountChat({root,api,user:state.user,onModels:data=>{if(context.isCurrent()){state.ai=data;updateChrome();}}});
+      else if (view === 'pdf-library') pageController=window.InspectionHub.mountLibrary({root,api,user:state.user,onModels:data=>{if(context.isCurrent()){state.ai=data;updateChrome();}}});
     } catch (error) {
       if (!context.isCurrent()) return;
       if (error.status === 401) { showLogin('Sesi Anda berakhir. Masuk kembali untuk melanjutkan.'); return; }
