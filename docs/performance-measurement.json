@@ -1,0 +1,307 @@
+{
+  "recorded_at": "2026-10-05T08:03:30.146Z",
+  "model_name": "gemma3:4b",
+  "note": "Manual same-photo latency measurement, without human reference labels. Not an accuracy benchmark. Detector timings are separate; VLM samples omit detector prompt hints for a fair profile comparison. First model load may be cold. No inspection or dataset writes.",
+  "samples": [
+    {
+      "analysis_id": 7,
+      "original_name": "WhatsApp Image 2026-10-05 at 07.42.57.jpeg",
+      "profile": "hemat",
+      "total_ms": 67137,
+      "inference_ms": 64897,
+      "image": {
+        "width": 576,
+        "height": 768
+      },
+      "generated_tokens": 280,
+      "model_load_ms": 14342,
+      "status": "TIDAK_PASTI",
+      "summary": "Foto menunjukkan kabel yang tidak teratur di dinding kantor. Ada potensi bahaya tersandung kabel. Selain itu, terdapat akses peralatan K3 yang mungkin terhalang. Tidak ada indikasi tumpahan atau jalur terhalang yang jelas.",
+      "findings": [
+        {
+          "hazard_type_id": 7,
+          "hazard_name": "Kabel atau barang berpotensi tersandung",
+          "severity": "RENDAH",
+          "confidence": 0.8,
+          "description": "Kabel yang tidak teratur di lantai, berpotensi menjadi bahaya tersandung.",
+          "recommended_action": "Periksa jalur berjalan dan rapikan kabel atau barang menggunakan prosedur yang berlaku."
+        },
+        {
+          "hazard_type_id": 8,
+          "hazard_name": "Akses ke perlengkapan keselamatan terhalang",
+          "severity": "RENDAH",
+          "confidence": 0.6,
+          "description": "Perangkat listrik dan kontrol terpasang di dinding, berpotensi menghalangi akses ke peralatan K3.",
+          "recommended_action": "Periksa akses ke perlengkapan keselamatan dan singkirkan penghalang secepatnya."
+        },
+        {
+          "hazard_type_id": 9,
+          "hazard_name": "Potensi visual lainnya",
+          "severity": "RENDAH",
+          "confidence": 0.7,
+          "description": "Kabel yang tidak teratur memerlukan evaluasi lebih lanjut untuk potensi bahaya.",
+          "recommended_action": "Tinjau kondisi di lokasi dan ikuti prosedur keselamatan organisasi."
+        }
+      ],
+      "detector": {
+        "latency_ms": 134.1,
+        "runtime_bytes": 110305280,
+        "object_count": 0
+      },
+      "before": {
+        "system": {
+          "total_bytes": 16329850880,
+          "available_bytes": 1127952384,
+          "used_bytes": 15201898496
+        },
+        "gpu": {
+          "available": true,
+          "name": "NVIDIA GeForce RTX 2050",
+          "memory_used_mb": 850,
+          "memory_total_mb": 4096,
+          "utilization_percent": 6,
+          "scope": "seluruh_perangkat",
+          "sampled_at": "2026-10-05T08:00:02.911Z"
+        }
+      },
+      "after": {
+        "system": {
+          "total_bytes": 16329850880,
+          "available_bytes": 341848064,
+          "used_bytes": 15988002816
+        },
+        "gpu": {
+          "available": true,
+          "name": "NVIDIA GeForce RTX 2050",
+          "memory_used_mb": 660,
+          "memory_total_mb": 4096,
+          "utilization_percent": 0,
+          "scope": "seluruh_perangkat",
+          "sampled_at": "2026-10-05T08:01:09.967Z"
+        }
+      },
+      "source_sha256": "906620d4f6a51756b4b82806eef81ea55ac58775c3100c0f6623e0fc75fb71b6"
+    },
+    {
+      "analysis_id": 7,
+      "original_name": "WhatsApp Image 2026-10-05 at 07.42.57.jpeg",
+      "profile": "detail",
+      "total_ms": 46948,
+      "inference_ms": 46514,
+      "image": {
+        "width": 768,
+        "height": 1024
+      },
+      "generated_tokens": 217,
+      "model_load_ms": 12,
+      "status": "TIDAK_PASTI",
+      "summary": "Foto menunjukkan area kantor dengan meja dan kabel yang menonjol. Terlihat potensi bahaya tersandung kabel yang tergeletak di lantai. Akses ke perlengkapan K3 mungkin terhalang.  Tidak ada indikasi APD yang tidak terlihat atau tumpahan yang jelas.",
+      "findings": [
+        {
+          "hazard_type_id": 7,
+          "hazard_name": "Kabel atau barang berpotensi tersandung",
+          "severity": "RENDAH",
+          "confidence": 0.8,
+          "description": "Kabel yang tergeletak di lantai menimbulkan potensi tersandung.",
+          "recommended_action": "Periksa jalur berjalan dan rapikan kabel atau barang menggunakan prosedur yang berlaku."
+        },
+        {
+          "hazard_type_id": 8,
+          "hazard_name": "Akses ke perlengkapan keselamatan terhalang",
+          "severity": "RENDAH",
+          "confidence": 0.6,
+          "description": "Kabel dan peralatan tampak menghalangi akses ke perlengkapan K3.",
+          "recommended_action": "Periksa akses ke perlengkapan keselamatan dan singkirkan penghalang secepatnya."
+        }
+      ],
+      "detector": {
+        "latency_ms": 96.1,
+        "runtime_bytes": 126234624,
+        "object_count": 0
+      },
+      "before": {
+        "system": {
+          "total_bytes": 16329850880,
+          "available_bytes": 341950464,
+          "used_bytes": 15987900416
+        },
+        "gpu": {
+          "available": true,
+          "name": "NVIDIA GeForce RTX 2050",
+          "memory_used_mb": 660,
+          "memory_total_mb": 4096,
+          "utilization_percent": 0,
+          "scope": "seluruh_perangkat",
+          "sampled_at": "2026-10-05T08:01:09.967Z"
+        }
+      },
+      "after": {
+        "system": {
+          "total_bytes": 16329850880,
+          "available_bytes": 635260928,
+          "used_bytes": 15694589952
+        },
+        "gpu": {
+          "available": true,
+          "name": "NVIDIA GeForce RTX 2050",
+          "memory_used_mb": 651,
+          "memory_total_mb": 4096,
+          "utilization_percent": 7,
+          "scope": "seluruh_perangkat",
+          "sampled_at": "2026-10-05T08:01:56.916Z"
+        }
+      },
+      "source_sha256": "906620d4f6a51756b4b82806eef81ea55ac58775c3100c0f6623e0fc75fb71b6"
+    },
+    {
+      "analysis_id": 5,
+      "original_name": "ChatGPT Image Oct 5, 2026, 02_03_58 AM.png",
+      "profile": "hemat",
+      "total_ms": 54592,
+      "inference_ms": 53777,
+      "image": {
+        "width": 768,
+        "height": 576
+      },
+      "generated_tokens": 312,
+      "model_load_ms": 14,
+      "status": "TIDAK_PASTI",
+      "summary": "Terlihat kabel yang rusak di lantai, berpotensi menjadi bahaya tersandung. Area kerja menunjukkan kemungkinan jalur terhalang. Tidak ada indikasi APD yang terlihat atau tumpahan. Perlu pemeriksaan lebih lanjut untuk memastikan keamanan.",
+      "findings": [
+        {
+          "hazard_type_id": 7,
+          "hazard_name": "Kabel atau barang berpotensi tersandung",
+          "severity": "RENDAH",
+          "confidence": 0.8,
+          "description": "Kabel terputus di lantai, menimbulkan risiko tersandung.",
+          "recommended_action": "Periksa jalur berjalan dan rapikan kabel atau barang menggunakan prosedur yang berlaku."
+        },
+        {
+          "hazard_type_id": 5,
+          "hazard_name": "Jalur jalan atau pintu keluar terhalang",
+          "severity": "RENDAH",
+          "confidence": 0.7,
+          "description": "Kabel yang terputus menghalangi jalur berjalan.",
+          "recommended_action": "Periksa jalur dan akses keluar di lokasi, lalu singkirkan penghalang sesuai aturan."
+        },
+        {
+          "hazard_type_id": 1,
+          "hazard_name": "APD yang diwajibkan tidak terlihat",
+          "severity": "RENDAH",
+          "confidence": 0.5,
+          "description": "Tidak ada indikasi APD yang digunakan.",
+          "recommended_action": "Periksa aturan APD yang berlaku untuk tugas dan zona ini, lalu pastikan pekerja yang bertugas mematuhinya."
+        },
+        {
+          "hazard_type_id": 9,
+          "hazard_name": "Potensi visual lainnya",
+          "severity": "RENDAH",
+          "confidence": 0.6,
+          "description": "Kondisi kabel yang tidak terawat.",
+          "recommended_action": "Tinjau kondisi di lokasi dan ikuti prosedur keselamatan organisasi."
+        }
+      ],
+      "detector": {
+        "latency_ms": 71.4,
+        "runtime_bytes": 71102464,
+        "object_count": 0
+      },
+      "before": {
+        "system": {
+          "total_bytes": 16329850880,
+          "available_bytes": 622669824,
+          "used_bytes": 15707181056
+        },
+        "gpu": {
+          "available": true,
+          "name": "NVIDIA GeForce RTX 2050",
+          "memory_used_mb": 651,
+          "memory_total_mb": 4096,
+          "utilization_percent": 7,
+          "scope": "seluruh_perangkat",
+          "sampled_at": "2026-10-05T08:01:56.916Z"
+        }
+      },
+      "after": {
+        "system": {
+          "total_bytes": 16329850880,
+          "available_bytes": 313806848,
+          "used_bytes": 16016044032
+        },
+        "gpu": {
+          "available": true,
+          "name": "NVIDIA GeForce RTX 2050",
+          "memory_used_mb": 648,
+          "memory_total_mb": 4096,
+          "utilization_percent": 6,
+          "scope": "seluruh_perangkat",
+          "sampled_at": "2026-10-05T08:02:52.160Z"
+        }
+      },
+      "source_sha256": "b3ff6ab3da23c4b274515b4ffba960746d4c0e4b8e673b5f1041b2d0aab92789"
+    },
+    {
+      "analysis_id": 5,
+      "original_name": "ChatGPT Image Oct 5, 2026, 02_03_58 AM.png",
+      "profile": "detail",
+      "total_ms": 37982,
+      "inference_ms": 37591,
+      "image": {
+        "width": 1024,
+        "height": 768
+      },
+      "generated_tokens": 136,
+      "model_load_ms": 16,
+      "status": "TIDAK_PASTI",
+      "summary": "Foto menunjukkan kabel yang rusak di lantai ruang rapat. Ini merupakan potensi bahaya tersandung. Perlu pemeriksaan lebih lanjut untuk memastikan tidak ada bahaya lain yang tersembunyi.",
+      "findings": [
+        {
+          "hazard_type_id": 7,
+          "hazard_name": "Kabel atau barang berpotensi tersandung",
+          "severity": "RENDAH",
+          "confidence": 0.8,
+          "description": "Kabel yang terputus di lantai menimbulkan risiko tersandung bagi orang yang lewat.",
+          "recommended_action": "Periksa jalur berjalan dan rapikan kabel atau barang menggunakan prosedur yang berlaku."
+        }
+      ],
+      "detector": {
+        "latency_ms": 78.1,
+        "runtime_bytes": 58847232,
+        "object_count": 0
+      },
+      "before": {
+        "system": {
+          "total_bytes": 16329850880,
+          "available_bytes": 313798656,
+          "used_bytes": 16016052224
+        },
+        "gpu": {
+          "available": true,
+          "name": "NVIDIA GeForce RTX 2050",
+          "memory_used_mb": 648,
+          "memory_total_mb": 4096,
+          "utilization_percent": 6,
+          "scope": "seluruh_perangkat",
+          "sampled_at": "2026-10-05T08:02:52.160Z"
+        }
+      },
+      "after": {
+        "system": {
+          "total_bytes": 16329850880,
+          "available_bytes": 548618240,
+          "used_bytes": 15781232640
+        },
+        "gpu": {
+          "available": true,
+          "name": "NVIDIA GeForce RTX 2050",
+          "memory_used_mb": 652,
+          "memory_total_mb": 4096,
+          "utilization_percent": 0,
+          "scope": "seluruh_perangkat",
+          "sampled_at": "2026-10-05T08:03:30.142Z"
+        }
+      },
+      "source_sha256": "b3ff6ab3da23c4b274515b4ffba960746d4c0e4b8e673b5f1041b2d0aab92789"
+    }
+  ]
+}
