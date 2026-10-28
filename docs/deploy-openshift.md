@@ -22,13 +22,13 @@ Tidak ada namespace perusahaan yang ditulis dalam manifest. Semua resource masuk
 
 Minta administrator memberikan project latihan, akses BuildConfig/ImageStream, registry image internal aktif, kuota build, dan izin keluar ke GitHub serta sumber paket/image. Tidak perlu meminta akses administrator cluster atau SCC `anyuid` untuk image aplikasi ini. Image disiapkan untuk UID acak/non-root. Database terpisah memiliki persyaratan deployment sendiri.
 
-Dockerfile memakai Node 22 Debian Bookworm, Microsoft ODBC/sqlcmd 18, dan virtualenv Python dengan Pillow/PyMuPDF. Builder membutuhkan akses registry Docker Hub, repositori Debian, `packages.microsoft.com`, dan PyPI beserta host unduhan paketnya. Untuk jaringan terisolasi, administrator harus menyediakan mirror/base image yang disetujui dan CA perusahaan. Jangan menonaktifkan validasi TLS untuk mengatasi proxy/sertifikat perusahaan.
+Dockerfile memakai **Ubuntu 22.04 LTS** — kebijakan perusahaan melarang base image Debian. Node.js 22 diambil dari tarball resmi `nodejs.org` dengan verifikasi SHA-256 (bukan dari apt, karena paket `nodejs` Ubuntu 22.04 masih versi 12), ditambah Microsoft ODBC/sqlcmd 18 dan virtualenv Python dengan Pillow/PyMuPDF. Builder membutuhkan akses ke Docker Hub (base image), `archive.ubuntu.com` dan `security.ubuntu.com`, `nodejs.org`, `packages.microsoft.com`, dan PyPI beserta host unduhan paketnya. Untuk jaringan terisolasi, administrator harus menyediakan mirror/base image yang disetujui dan CA perusahaan. Jangan menonaktifkan validasi TLS untuk mengatasi proxy/sertifikat perusahaan.
 
 SQL tools memerlukan persetujuan lisensi Microsoft. Build sengaja tidak berjalan dengan `ACCEPT_SQLTOOLS_EULA=N`. Terapkan patch persetujuan di bawah hanya jika perusahaan mengizinkannya. Dependensi rentang versi perlu dikunci ke versi/digest hasil build yang disetujui setelah validasi perusahaan.
 
-### Debian HTTP 503 dan batas perbaikan
+### Kegagalan unduh paket (apt/PyPI) dan batas perbaikan
 
-Dockerfile mengubah hanya endpoint Debian bawaan dari HTTP ke HTTPS, baik format `.sources` maupun `.list`. Jika image slim belum memiliki bundle CA, Node menyediakan CA publik bawaannya untuk unduhan awal; paket `ca-certificates` kemudian memasang trust store sistem. Base image dengan CA perusahaan tetap diperlukan bila proxy melakukan inspeksi TLS. Validasi TLS dan tanda tangan paket APT tetap aktif. Retry dibatasi tiga kali dan update APT gagal jika ada indeks yang gagal diunduh, sehingga build tidak diam-diam memakai indeks lama.
+Base image Ubuntu sudah memakai repositori HTTPS dan membawa `ca-certificates`, jadi Dockerfile tidak mengubah sumber paket sistem. Repositori Microsoft ditambahkan lewat paket `packages-microsoft-prod.deb` resmi. Base image dengan CA perusahaan tetap diperlukan bila proxy melakukan inspeksi TLS. Validasi TLS dan tanda tangan paket APT tetap aktif. Retry dibatasi tiga kali dan update APT gagal jika ada indeks yang gagal diunduh, sehingga build tidak diam-diam memakai indeks lama.
 
 HTTP 503 sendiri belum membuktikan penyebabnya: bisa berasal dari mirror, proxy, atau gateway perusahaan. HTTPS mengatasi jalur HTTP yang bermasalah bila HTTPS diizinkan, tetapi tidak menjamin akses jaringan. Jika masih gagal, kirim ke IT waktu kejadian, nama build, host/URL paket dan status dari log yang telah disanitasi. IT perlu memeriksa egress builder, proxy, CA, serta mirror/registry yang disetujui. Jangan mengganti DNS, firewall, proxy perusahaan, `Verify-Peer`, atau `trusted=yes` untuk meloloskan build.
 
@@ -173,7 +173,7 @@ Jangan apply ulang runtime-template saat upgrade tanpa meninjau resource: templa
 - Image ringan menyediakan fitur gambar/PDF dan klien Ollama. Training YOLO dan detektor ONNX tidak dipasang secara default. Jika diperlukan, ubah buildArg `INSTALL_RIG_TRAINING=true` dengan persetujuan admin dan build ulang. Ini mengunduh PyTorch CPU/Ultralytics/ONNX; persyaratan lisensi dan versi dependensi juga perlu disetujui. Resource build dan runtime perlu dinaikkan berdasarkan ukuran dataset; 1Gi runtime default ditujukan untuk aplikasi ringan tanpa training.
 - Bobot awal `models/sh17-yolov8n/source-yolo8n.pt` dan model terlatih tidak ada di Git/image. Pasang berkas yang sah dan tervalidasi ke PVC bila fitur training diaktifkan; kode tidak mengunduh bobot secara otomatis. Lisensi paket/model harus sesuai penggunaan perusahaan.
 - PVC bukan backup. Simpan backup SQL dan file secara konsisten, serta uji pemulihannya sesuai prosedur perusahaan.
-- Base image Debian adalah rancangan awal. Bila perusahaan mewajibkan UBI/registry internal atau pin versi tertentu, Dockerfile harus disesuaikan sebelum build.
+- Base image **Ubuntu 22.04 LTS**, sesuai kebijakan perusahaan yang melarang Debian. Versi ini dipilih karena repositori Microsoft untuk `msodbcsql18`/`mssql-tools18` tersedia resmi di jammy. Bila perusahaan mewajibkan 24.04, UBI, atau registry internal, sesuaikan base image dan `NODE_VERSION`, lalu **build ulang untuk diuji** — jangan mengandalkan asumsi.
 
 ## Diagnosis singkat
 
@@ -181,7 +181,7 @@ Jangan apply ulang runtime-template saat upgrade tanpa meninjau resource: templa
 |---|---|
 | Clone Git 401/403 | Source secret di project yang sama, PAT read-only repo yang benar, masa berlaku dan kebijakan organisasi |
 | Build gagal awal | Persetujuan lisensi/buildArg, Dockerfile strategy, akses registry/paket, CA/proxy perusahaan |
-| Debian HTTP/HTTPS 503 | Catat URL/status/waktu dari log builder; setelah retry terbatas tetap gagal, minta IT memeriksa proxy/egress/mirror. Perbaikan source HTTPS tidak mengubah kebijakan perusahaan |
+| apt / PyPI 503, paket gagal diunduh | Catat URL/status/waktu dari log builder; setelah retry terbatas tetap gagal, minta IT memeriksa proxy/egress/mirror/CA. Jangan menonaktifkan validasi TLS |
 | Pod Pending | PVC Bound, storage class, kuota dan izin SCC/fsGroup; jangan langsung meminta root/anyuid |
 | ImagePullBackOff | Digest image benar, build selesai, registry internal dan izin pull dalam project |
 | Pod berjalan tetapi tidak Ready | Log SQL, endpoint TCP/port, firewall, CA, login runtime, skema hasil Job migrasi |
