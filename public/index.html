@@ -15,6 +15,8 @@
   <link rel="stylesheet" href="/rig-training-ui.css">
   <link rel="stylesheet" href="/protect-curation-ui.css">
   <link rel="stylesheet" href="/learning-workflow.css">
+  <link rel="stylesheet" href="/inspection-ai.css">
+  <link rel="stylesheet" href="/inspection-warnings.css">
 </head>
 <body>
   <section id="login-screen" class="login-screen" aria-live="polite"></section>
@@ -23,6 +25,8 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-label">MENU UTAMA</div>
       <nav class="nav-list" aria-label="Navigasi utama">
+        <button class="nav-link" data-view="inspection-ai"><span class="nav-icon">✦</span>AI Inspeksi Visual</button>
+        <button class="nav-link" data-view="pdf-library"><span class="nav-icon">▤</span>Dataset PDF</button>
         <button class="nav-link is-active" data-view="dashboard"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grid" viewBox="0 0 16 16">
   <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5z"/>
 </svg></span><span>Ringkasan</span></button>
@@ -99,6 +103,9 @@
   <script src="/rig-training-ui.js" defer></script>
   <script src="/learning-workflow-ui.js" defer></script>
   <script src="/protect-curation-ui.js" defer></script>
+  <script src="/inspection-ai-ui.js" defer></script>
+  <script src="/inspection-warnings-ui.js" defer></script>
+  <script src="/vlm-learning-ui.js" defer></script>
   <script src="/app.js" defer></script>
 </body>
 </html>
