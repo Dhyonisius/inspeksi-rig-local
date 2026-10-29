@@ -1,0 +1,11 @@
+{
+  "name": "llm-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Jembatan API Ollama ke LLM internal yang OpenAI-compatible, untuk aplikasi Inspeksi Visual",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test.js"
+  }
+}
