@@ -28,12 +28,41 @@ keduanya, termasuk **fallback** ke `json_object` bila gateway menolak `json_sche
 | `UPSTREAM_TIMEOUT_MS` | tidak | default `240000` (aplikasi sendiri menunggu 180–300 detik) |
 | `IMAGE_MIME` | tidak | default `image/jpeg` |
 | `PORT` | tidak | default `8080` |
+| `UPSTREAM_DPOP` | tidak | `1` bila gateway menuntut **DPoP proof of possession** |
+| `DPOP_STORE_PATH` | tidak | default `/data/dpop.json`; **butuh volume** agar kunci bertahan |
+| `DPOP_DEVICE_NAME` | tidak | nama device saat registrasi, default `llm-bridge` |
+
+## DPoP (RFC 9449)
+
+Sebagian gateway perusahaan tidak menerima Bearer token saja dan membalas:
+
+```json
+401 {"detail":"PROOF_MISSING"}
+```
+
+Untuk kasus itu aktifkan `UPSTREAM_DPOP=1`. Jembatan akan:
+
+1. membuat pasangan kunci **EC P-256** sekali dan menyimpan kunci privat di `DPOP_STORE_PATH`;
+2. mendaftar ke `POST /v1/devices/register` (`{device_name}`) sekali, membawa header `DPoP`;
+3. mengirim `Authorization: Bearer <token>` + `DPoP: <proof JWT>` di setiap request, dengan
+   klaim `htm`, `htu`, `iat`, `jti`, dan `ath` (hash token);
+4. mengulang otomatis bila server meminta nonce (`DPoP-Nonce` / `use_dpop_nonce`).
+
+Kunci privat **harus persisten**. Tanpa volume, setiap restart membuat kunci baru dan device
+harus didaftarkan ulang — kalau gateway mewajibkan approval, ini akan memblokir.
+
+```yaml
+volumeMounts:
+  - name: dpop
+    mountPath: /data
+```
 
 ## Jalankan lokal
 
 ```bash
 node server.js                      # butuh env di atas
-node --test test.js                 # 4 tes, memakai kode discovery asli aplikasi
+node --test test.js                 # 4 tes: discovery + penerjemahan pesan
+node --test dpop.test.js            # 3 tes: tanda tangan, ath, nonce, persistensi kunci
 ```
 
 ## Deploy ke OpenShift
