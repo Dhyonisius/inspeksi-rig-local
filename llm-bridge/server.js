@@ -9,6 +9,7 @@
 // LLM internal perusahaan biasanya OpenAI-compatible (/v1/chat/completions,
 // /v1/models). Modul ini menerjemahkan kedua arah tanpa dependensi npm.
 import http from 'node:http';
+import { createDpop } from './dpop.js';
 
 const DEFAULTS = {
   port: 8080,
@@ -21,6 +22,9 @@ const DEFAULTS = {
   maxBodyBytes: 32 * 1024 * 1024,
   chatPath: '/chat/completions',
   modelsPath: '/models',
+  dpop: false,                  // aktifkan bila gateway menuntut DPoP proof
+  dpopStorePath: '/data/dpop.json',
+  dpopDeviceName: 'llm-bridge',
   log: true,
 };
 
@@ -85,13 +89,29 @@ export function createBridge(overrides = {}) {
 
   const log = (...args) => { if (cfg.log) console.log('[bridge]', ...args); };
 
+  // DPoP opsional: gateway tertentu menuntut proof of possession.
+  const dpop = cfg.dpop
+    ? createDpop({ storePath: cfg.dpopStorePath, deviceName: cfg.dpopDeviceName, log })
+    : null;
+
   async function upstream(path, body) {
-    const response = await fetch(base + path, {
+    const url = base + path;
+    const init = {
       method: body === undefined ? 'GET' : 'POST',
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(cfg.timeoutMs),
-    });
+      token: cfg.upstreamApiKey,
+    };
+
+    let response;
+    if (dpop) {
+      await dpop.register(globalThis.fetch, base, cfg.upstreamApiKey);
+      response = await dpop.call(globalThis.fetch, url, init);
+    } else {
+      response = await fetch(url, init);
+    }
+
     const text = await response.text();
     let parsed = null;
     try { parsed = text ? JSON.parse(text) : null; } catch { parsed = null; }
@@ -231,6 +251,9 @@ if (process.argv[1] && import.meta.url === `file://${process.argv[1].replace(/\\
     publicModel: process.env.PUBLIC_MODEL || '',
     timeoutMs: Number(process.env.UPSTREAM_TIMEOUT_MS) || DEFAULTS.timeoutMs,
     imageMime: process.env.IMAGE_MIME || DEFAULTS.imageMime,
+    dpop: process.env.UPSTREAM_DPOP === '1',
+    dpopStorePath: process.env.DPOP_STORE_PATH || DEFAULTS.dpopStorePath,
+    dpopDeviceName: process.env.DPOP_DEVICE_NAME || DEFAULTS.dpopDeviceName,
     log: process.env.LOG !== '0',
   });
   server.listen(Number(process.env.PORT) || 8080, process.env.HOST || '0.0.0.0', () => {
