@@ -18,8 +18,8 @@ items:
         git:
           uri: https://github.com/Dhyonisius/inspeksi-rig-local.git
           ref: main
-        sourceSecret:
-          name: github-inspeksi-read
+        # Public GitHub source requires no clone secret.
+        # For a private fork, add the approved sourceSecret for that repository.
       strategy:
         type: Docker
         dockerStrategy:

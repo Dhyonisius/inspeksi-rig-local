@@ -10,6 +10,9 @@ data:
   SQL_MIGRATE_ON_START: 'false'
   APP_ORIGIN: https://CHANGE_ME.invalid
   OLLAMA_BASE_URL: http://CHANGE_ME.invalid:11434
+  # Chat text uses the company bridge; vision keeps OLLAMA_BASE_URL above.
+  INSPECTION_CHAT_BASE_URL: http://llm-bridge:8080
+  INSPECTION_CHAT_MODEL: company-inspection
 ---
 apiVersion: v1
 kind: ConfigMap

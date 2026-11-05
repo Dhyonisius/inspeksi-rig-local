@@ -4,6 +4,8 @@ Paket ini menempatkan **aplikasi dan SQL Server dalam project yang sama**, denga
 
 **Status:** berkas disiapkan untuk deployment; belum diterapkan atau diuji di cluster perusahaan. Pengujian aplikasi dilakukan pada tahap berikutnya. Data, foto, password, dan model dari laptop tidak otomatis ikut ke server. Generator data dummy tidak dijalankan oleh paket ini.
 
+Untuk pembaruan chatbot dan koneksi LLM internal, ikuti [panduan update chatbot](docs/update-openshift-chatbot.md). ConfigMap menyiapkan endpoint chat terpisah ke `llm-bridge` dan alias `company-inspection`; endpoint/model gateway sebenarnya tetap mengikuti tim IT.
+
 ## 1. Buka project dan periksa kebutuhan
 
 1. Masuk ke console OpenShift perusahaan dan pilih project yang diberikan.

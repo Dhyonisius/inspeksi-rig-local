@@ -5,7 +5,7 @@
 - Inspeksi Visual: <http://127.0.0.1:3180/>.
 - Sumber dummy: <http://localhost:5091/>. Dashboard memuat **28 rig**, **5 rig per halaman**, **6 halaman**, dan satu tombol **Export PDF per rig**. Halaman terakhir memuat 3 rig. Pilihan 10/20 per halaman juga tersedia.
 - API dummy opsional: <http://localhost:5091/api/reports>. Pengguna dapat tetap memakai tautan halaman biasa tanpa mengetahui API.
-- Menu **AI Inspeksi Visual** memuat chatbot Gemma dan panel **VLM belajar · percobaan lokal**.
+- Menu **AI Inspeksi Visual** memuat chatbot laporan (Qwen lokal atau LLM internal perusahaan) dan panel **VLM belajar · percobaan lokal**.
 
 Kode ini mencakup fitur lokal terbaru. Deployment OpenShift yang sudah berjalan tidak otomatis diperbarui. Lihat PANDUAN-DEPLOY-OPENSHIFT-PERUSAHAAN.md untuk pemasangan perusahaan. Sumber dummy terpisah tidak termasuk paket deployment perusahaan dan tidak berjalan otomatis.
 
@@ -25,7 +25,7 @@ Batas saat ini: 50 halaman sumber, 200 tautan PDF per putaran, PDF 20 MiB, HTML/
 
 ## VLM belajar dan penghapusan JPEG
 
-**Gemma chatbot tidak otomatis berubah bobotnya.** Model belajar lokal yang ditambahkan adalah **HuggingFaceTB/SmolVLM-256M-Instruct**, dengan LoRA/adaptor tersimpan terpisah. Saat ini tugas yang divalidasi pada model kecil ini terbatas pada **klasifikasi READY / NOT_READY pada diagram dummy**. Ini bukan model keselamatan operasional dan tidak boleh dianggap sudah terlatih pada foto rig asli.
+**Model chatbot tidak otomatis berubah bobotnya.** Model belajar lokal yang ditambahkan adalah **HuggingFaceTB/SmolVLM-256M-Instruct**, dengan LoRA/adaptor tersimpan terpisah. Saat ini tugas yang divalidasi pada model kecil ini terbatas pada **klasifikasi READY / NOT_READY pada diagram dummy**. Ini bukan model keselamatan operasional dan tidak boleh dianggap sudah terlatih pada foto rig asli.
 
 Alur percobaannya:
 
@@ -54,7 +54,7 @@ Menyimpan bobot/adaptor adalah cara mempertahankan hasil pelatihan setelah foto 
 2. Lihat antrean, tahap proses, checkpoint, dan jumlah JPEG yang dibersihkan.
 3. **Latih batch dummy** menjalankan satu batch percobaan. Sakelar otomatis mengatur pemeriksaan antrean berikutnya.
 4. **Uji diagram dummy baru** menerima JPG/PNG/WebP maksimal 3 MiB, menggunakan checkpoint model belajar, dan menampilkan label prediksinya. Masukan uji dihapus setelah proses selesai.
-5. Tombol data asli dinonaktifkan sampai model/trainer untuk foto asli divalidasi. Chatbot Gemma tetap dapat menjawab dari metadata laporan yang tersimpan, termasuk setelah JPEG foto latihan dibersihkan.
+5. Tombol data asli dinonaktifkan sampai model/trainer untuk foto asli divalidasi. Chatbot laporan tetap dapat menjawab dari metadata laporan yang tersimpan, termasuk setelah JPEG foto latihan dibersihkan.
 
 ## Menjalankan ulang di komputer ini
 
@@ -73,7 +73,7 @@ Dependensi PDF/OCR aplikasi utama berada di `deploy/container/requirements.txt`.
 .\scripts\setup-vlm-learning.ps1
 ```
 
-Peluncur memerlukan Node.js, Python, SQL Server/sqlcmd; chatbot memerlukan Ollama dengan `gemma3:4b`. Pengunduhan model dasar SmolVLM pertama memerlukan internet. Pelatihan dan inferensi gambar berjalan lokal; foto tidak dikirim ke Hugging Face. Adaptor memerlukan model dasar yang sesuai untuk digunakan kembali.
+Peluncur memerlukan Node.js, Python, SQL Server/sqlcmd; chatbot lokal memakai `qwen3:4b-instruct`, sedangkan server dapat memakai LLM internal melalui `llm-bridge`. Pengunduhan model dasar SmolVLM pertama memerlukan internet. Pelatihan dan inferensi gambar berjalan lokal; foto tidak dikirim ke Hugging Face. Adaptor memerlukan model dasar yang sesuai untuk digunakan kembali.
 
 ## Direktori data penting
 

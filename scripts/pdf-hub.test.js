@@ -32,11 +32,40 @@ test('host tidak diizinkan dan operator ditolak; redirect diperiksa ulang',async
  const ctx=await setup(async()=>new Response(null,{status:302,headers:{location:'http://169.254.169.254/latest'}}));
  try{await assert.rejects(ctx.call('/api/pdf-hub/config',{source_url:'file:///etc/passwd'}));await assert.rejects(ctx.call('/api/pdf-hub/config',{source_url:'http://localhost:5091/'},'operator'),{status:403});await ctx.call('/api/pdf-hub/config',{source_url:'http://localhost:5091/'});await assert.rejects(ctx.hub.run(),/Host sumber/);assert.equal((await ctx.hub.list()).length,0);}finally{await ctx.clean();}
 });
-test('chat VLM menerima fakta, foto relevan, dan riwayat percakapan',async()=>{
- let captured;const ctx=await setup(async(url,options)=>{if(String(url).endsWith('/api/chat')){captured=JSON.parse(options.body);return Response.json({model:'gemma3:4b',message:{content:'Jawaban uji dari dataset dummy'}});}return new Response(pdf,{headers:{'Content-Type':'application/pdf'}});});
- try{await ctx.call('/api/pdf-hub/config',{source_url:'http://localhost:5091/export.pdf'});await ctx.hub.run();const result=await ctx.call('/api/inspection-assistant',{message:'Bagaimana Accumulator Warning Sign?',history:[{role:'user',content:'Lihat laporan terbaru'}]});assert.equal(result.body.engine,'ollama');assert.ok(captured.messages.some(m=>m.images?.length));assert.ok(captured.messages.some(m=>m.content==='Lihat laporan terbaru'));assert.ok(captured.messages[0].content.includes('"item_count":12'));assert.ok(captured.messages[0].content.includes('"is_dummy":true'));}finally{await ctx.clean();}
+test('chat Qwen menerima teks laporan, fakta dan riwayat tanpa mengirim foto',async()=>{
+ let captured;const ctx=await setup(async(url,options)=>{if(String(url).endsWith('/api/chat')){captured=JSON.parse(options.body);return Response.json({model:'qwen3:4b-instruct',message:{content:'Jawaban uji dari dataset dummy'}});}return new Response(pdf,{headers:{'Content-Type':'application/pdf'}});});
+ try{await ctx.call('/api/pdf-hub/config',{source_url:'http://localhost:5091/export.pdf'});await ctx.hub.run();const result=await ctx.call('/api/inspection-assistant',{message:'Bagaimana Accumulator Warning Sign?',history:[{role:'user',content:'Lihat laporan terbaru'}]});assert.equal(result.body.engine,'ollama');assert.equal(captured.model,'qwen3:4b-instruct');assert.equal(captured.think,false);assert.ok(captured.messages.every(m=>!m.images));assert.ok(captured.messages[0].content.includes('pages'));assert.ok(captured.messages.some(m=>m.content==='Lihat laporan terbaru'));assert.ok(captured.messages[0].content.includes('"item_count":12'));assert.ok(captured.messages[0].content.includes('"is_dummy":true'));}finally{await ctx.clean();}
 });
 function multiPage(raw){const u=new URL(raw),page=Number(u.searchParams.get('page')||1);return 'Showing rigs '+((page-1)*5+1)+' to '+Math.min(page*5,28)+' of 28 '+Array.from({length:Math.min(5,28-(page-1)*5)},(_,i)=>`<a data-export-pdf href="/export.pdf?rig=${(page-1)*5+i+1}">Export PDF</a>`).join('')+(page<6?`<a rel="next" href="/?page=${page+1}">Next</a>`:'<a rel="next" href="/">Next</a>');}
+
+test('endpoint chat internal terpisah dari vision dan memakai alias model perusahaan',async()=>{
+ const oldUrl=process.env.INSPECTION_CHAT_BASE_URL,oldModel=process.env.INSPECTION_CHAT_MODEL;let capturedUrl,captured;
+ const ctx=await setup(async(url,options)=>{if(String(url).endsWith('/api/chat')){capturedUrl=url;captured=JSON.parse(options.body);return Response.json({model:'company-inspection',message:{content:'Temuan berdasarkan PDF sumber.'}});}return new Response(pdf);});
+ try{
+  await ctx.call('/api/pdf-hub/config',{source_url:'http://localhost:5091/fixture.pdf'});await ctx.hub.run();
+  process.env.INSPECTION_CHAT_BASE_URL='http://company-bridge:8080/';process.env.INSPECTION_CHAT_MODEL='company-inspection';
+  const reply=await ctx.call('/api/inspection-assistant',{message:'Ringkas laporan'});
+  assert.equal(capturedUrl,'http://company-bridge:8080/api/chat');assert.equal(captured.model,'company-inspection');assert.equal(reply.body.engine,'ollama');assert.equal(reply.body.model,'company-inspection');assert.ok(captured.messages.every(m=>!m.images));
+ }finally{if(oldUrl===undefined)delete process.env.INSPECTION_CHAT_BASE_URL;else process.env.INSPECTION_CHAT_BASE_URL=oldUrl;if(oldModel===undefined)delete process.env.INSPECTION_CHAT_MODEL;else process.env.INSPECTION_CHAT_MODEL=oldModel;await ctx.clean();}
+});
+
+test('PDF teks tanpa foto diimpor, dibaca Qwen, diperbarui tanpa restart dan menyimpan feedback',async()=>{
+ const textFile=path.join(fixtureDir,'text.pdf');
+ execFileSync(process.env.PYTHON_EXE||'python',['-c',"from reportlab.pdfgen import canvas; import sys; c=canvas.Canvas(sys.argv[1]); c.drawString(60,760,'Rig TEST-77 Date 2026-11-05'); c.drawString(60,730,'Equipment: Mud Pump. Status: NOT_READY. Remark: Seal bocor, perlu diperbaiki.'); c.save()",textFile],{windowsHide:true});
+ let version=await fs.readFile(textFile),captured;
+ const ctx=await setup(async(raw,options)=>{if(String(raw).endsWith('/api/chat')){captured=JSON.parse(options.body);return Response.json({model:'qwen3:4b-instruct',message:{content:'Mud Pump NOT_READY; seal bocor (TEST-77, hal. 1).'}});}return new Response(version,{headers:{'Content-Type':'application/pdf'}});});
+ try{
+  await ctx.call('/api/pdf-hub/config',{source_url:'http://localhost:5091/text.pdf'});await ctx.hub.run();
+  const [report]=await ctx.hub.list();assert.equal(report.items.length,0);assert.match(report.text_pages[0].text,/Seal bocor/);
+  const result=await ctx.call('/api/inspection-assistant',{message:'Apa masalah Mud Pump?',reply_to:'Laporan terbaru'});
+  assert.equal(result.body.engine,'ollama');assert.match(captured.messages[0].content,/Seal bocor/);assert.ok(captured.messages.some(m=>m.content.includes('Kutipan jawaban')));
+  const direct=await ctx.call('/api/inspection-assistant',{message:'ringkas',use_ai:false});assert.match(direct.body.answer,/kutipan teks laporan/);
+  execFileSync(process.env.PYTHON_EXE||'python',['-c',"from reportlab.pdfgen import canvas; import sys; c=canvas.Canvas(sys.argv[1]); c.drawString(60,760,'Rig TEST-77 Date 2026-11-06'); c.drawString(60,730,'Equipment Mud Pump READY. Seal telah diganti.'); c.save()",textFile],{windowsHide:true});
+  version=await fs.readFile(textFile);await ctx.hub.run();await ctx.call('/api/inspection-assistant',{message:'Apa status Mud Pump sekarang?'});assert.match(captured.messages[0].content,/Seal telah diganti/);assert.doesNotMatch(captured.messages[0].content,/Seal bocor/);
+  const feedback=await ctx.call('/api/inspection-assistant/feedback',{rating:'down',question:'status',answer:'contoh jawaban'});assert.equal(feedback.body.ok,true);
+  await assert.rejects(ctx.call('/api/inspection-assistant/feedback',{rating:'invalid'}),{status:400});
+ }finally{await ctx.clean();}
+});
 test('28 PDF di 6 halaman, link ganda dan loop pagination tidak menggandakan unduhan',async()=>{
  const downloads=[];const ctx=await setup(async raw=>{const u=new URL(raw);if(u.pathname==='/export.pdf'){downloads.push(u.href);return new Response(pdf);}return new Response(multiPage(raw)+'<a data-export-pdf href="/export.pdf?rig=1">Export PDF</a>',{headers:{'Content-Type':'text/html'}});});
  try{await ctx.call('/api/pdf-hub/config',{source_url:'http://localhost:5091/'});const result=await ctx.hub.run();assert.equal(result.complete,true);assert.equal(result.pages,6);assert.equal(result.discovered,28);assert.equal(result.imported,1);assert.equal(result.duplicates,27);assert.equal(new Set(downloads).size,28);assert.equal(downloads.length,28);}finally{await ctx.clean();}

@@ -14,6 +14,12 @@ parameters:
     description: Ollama endpoint reachable from the pod, e.g. http://ollama.ai.svc:11434
   - name: STORAGE_SIZE
     value: 10Gi
+  - name: INSPECTION_CHAT_MODEL
+    value: qwen3:4b-instruct
+    description: Text chat model available on Ollama, or PUBLIC_MODEL alias from llm-bridge.
+  - name: INSPECTION_CHAT_BASE_URL
+    value: ''
+    description: Optional text-chat bridge URL; empty uses OLLAMA_BASE_URL. Company example http://llm-bridge:8080.
 objects:
   - apiVersion: v1
     kind: ConfigMap
@@ -22,6 +28,8 @@ objects:
     data:
       SQL_SERVER: ${SQL_SERVER}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL}
+      INSPECTION_CHAT_MODEL: ${INSPECTION_CHAT_MODEL}
+      INSPECTION_CHAT_BASE_URL: ${INSPECTION_CHAT_BASE_URL}
       # Override on the Deployment after creating the HTTPS Route, before scaling up.
       APP_ORIGIN: https://CHANGE_ME.invalid
   - apiVersion: v1

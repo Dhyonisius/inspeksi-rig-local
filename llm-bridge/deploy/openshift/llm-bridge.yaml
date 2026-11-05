@@ -35,9 +35,9 @@ items:
                 - name: UPSTREAM_BASE_URL
                   value: https://llm.internal/v1
                 - name: UPSTREAM_MODEL
-                  value: qwen2.5-vl-7b
+                  value: CHANGE_ME_COMPANY_MODEL
                 - name: PUBLIC_MODEL
-                  value: qwen2.5-vl-7b
+                  value: company-inspection
                 # Token hanya dari Secret; jangan ditulis di sini.
                 - name: UPSTREAM_API_KEY
                   valueFrom:

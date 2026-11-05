@@ -5,8 +5,20 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import { createBridge } from './server.js';
 import { createVisionModelList } from '../scripts/ollama-models.js';
+import { inspectionMessages } from '../scripts/inspection-chat-context.js';
 
 const PUBLIC_MODEL = 'qwen-vl-internal';
+
+test('chat inspeksi teks diteruskan ke model internal dengan konteks PDF dan tanpa gambar',async()=>{
+ const ctx=await setup();
+ try{
+  ctx.upstream.state.content='Mud Pump NOT_READY, seal bocor (halaman 2).';
+  const messages=inspectionMessages([{id:'test',rig:'SIMULASI-RIG',is_dummy:true,date:'2026-11-05',text_pages:[{page:2,text:'Mud Pump NOT_READY, seal bocor.'}],items:[]}],'Equipment mana yang bermasalah?');
+  const response=await fetch(ctx.base+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:PUBLIC_MODEL,stream:false,think:false,options:{num_predict:650},messages})});
+  assert.equal(response.status,200);const result=await response.json();assert.match(result.message.content,/Mud Pump NOT_READY/);
+  const call=ctx.upstream.state.calls.find(c=>c.path==='/v1/chat/completions');assert.equal(call.body.model,PUBLIC_MODEL);assert.match(call.body.messages[0].content,/seal bocor/);assert.equal(call.body.max_tokens,650);assert.ok(call.body.messages.every(m=>typeof m.content==='string'));
+ }finally{await ctx.close();}
+});
 
 function listen(server) {
   return new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve(server.address().port)));

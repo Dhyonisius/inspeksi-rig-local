@@ -21,11 +21,12 @@ def parse(source,dest):
         # Embedded data is accepted only after matching it against the PDF pages/images.
         if len(attachment['items'])>300:raise ValueError('Terlalu banyak item laporan.')
     ocr=None
-    if not attachment:
+    if not attachment and any(page.images for page in reader.pages):
         from rapidocr_onnxruntime import RapidOCR
         ocr=RapidOCR(intra_op_num_threads=1,inter_op_num_threads=1)
     rigmatch=re.search(r'Rig\s+(\S+)\s+Date',texts[0]);datematch=re.search(r'Date\s+(\d{4}-\d{2}-\d{2})',texts[0])
     report={'schema_version':1,'rig':attachment.get('rig') if attachment else (rigmatch.group(1) if rigmatch else source.stem),'date':attachment.get('date') if attachment else (datematch.group(1) if datematch else None),'is_dummy':bool(attachment and attachment.get('is_dummy')),'pages':len(reader.pages),'source_sha256':digest(source.read_bytes()),'text':'\n'.join(texts)[:250000], 'items':[],'skipped_na':0,'warnings':[]}
+    report['text_pages']=[{'page':i+1,'text':t[:12000]} for i,t in enumerate(texts)]
     previous_lines=[];role='';equipment='';seen=set();na_images=set();embedded_index=0;generic_index=0
     roles=['Toolpusher','Driller','Derrickman','Floorman','Mechanic','Truckpusher','HES Field']
     # Text and photographs can straddle page boundaries. Match the stable source

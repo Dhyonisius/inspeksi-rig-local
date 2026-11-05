@@ -1,5 +1,11 @@
 # Inspeksi Rig Lokal
 
+## Chatbot inspeksi terbaru
+
+Chatbot laporan mendukung **LLM internal perusahaan melalui llm-bridge**, atau **Qwen3:4b-instruct** untuk pengujian lokal, untuk teks PDF, dengan tampilan balon chat, balas, penilaian jawaban, tombol chat terbaru, dan pop-up rincian sumber. Analisis foto tetap menggunakan model vision yang dikonfigurasi pada aplikasi.
+
+Untuk pembaruan dari repository public ke OpenShift, baca **[Panduan update chatbot dari Git](docs/update-openshift-chatbot.md)**. Kode dan konfigurasi model sudah disiapkan; endpoint AI, sumber PDF, SQL, storage dan build image perlu dikonfigurasi serta diuji pada lingkungan perusahaan.
+
 ## Panduan menjalankan
 
 **[Buka Panduan Menjalankan](PANDUAN-MENJALANKAN.md)** — gambaran proyek, langkah menjalankan dari GitHub pada Windows, konfigurasi SQL/Ollama, checklist pengujian, dan jalur deployment OpenShift.

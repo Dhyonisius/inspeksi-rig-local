@@ -47,7 +47,9 @@ BuildConfig memakai Docker strategy dan `forcePull: true`; akses registry tetap 
 
 Patch persetujuan EULA mengganti seluruh daftar buildArgs. Tinjau dan pertahankan argumen kustom yang telah disetujui sebelum menerapkannya. Meng-apply ulang `build.yaml` mengembalikan EULA ke `N`; persetujuan bukan default permanen dalam repository. EULA ini untuk paket klien ODBC/sqlcmd, bukan persetujuan lisensi/deployment SQL Server. Jangan menaruh password/PAT di buildArgs.
 
-### 1. Siapkan akses GitHub baca saja
+### 1. Akses GitHub public atau fork privat
+
+Repository utama sekarang public: BuildConfig contoh tidak membutuhkan source secret. Gunakan URL Git biasa tanpa token. Instruksi PAT berikut hanya berlaku untuk fork privat yang memang membutuhkan autentikasi.
 
 Gunakan fine-grained PAT yang **hanya** mencakup `Dhyonisius/inspeksi-rig-local`, izin **Contents: Read-only**, masa berlaku terbatas. Token ini terpisah dari autentikasi Git Credential Manager laptop. Jangan gunakan token OAuth laptop sebagai secret build.
 
@@ -78,7 +80,7 @@ oc get builds
 oc get istag inspeksi-rig:latest
 ```
 
-Di console juga dapat memakai **Import from Git**, URL `https://github.com/Dhyonisius/inspeksi-rig-local.git`, branch `main`, source secret `github-inspeksi-read`, metode **Dockerfile**, path `Dockerfile`. Jangan pilih builder Python. Manifest BuildConfig lebih terarah untuk build tanpa langsung membuat aplikasi yang belum mempunyai database. Jangan membuat resource duplikat dengan nama yang sama melalui kedua cara.
+Di console juga dapat memakai **Import from Git**, URL `https://github.com/Dhyonisius/inspeksi-rig-local.git`, branch `main`, tanpa source secret untuk repository public (gunakan `github-inspeksi-read` hanya untuk fork privat), metode **Dockerfile**, path `Dockerfile`. Jangan pilih builder Python. Manifest BuildConfig lebih terarah untuk build tanpa langsung membuat aplikasi yang belum mempunyai database. Jangan membuat resource duplikat dengan nama yang sama melalui kedua cara.
 
 **Berhenti pada tahap build bila SQL Server dan Ollama belum tersedia.** Belum perlu Route, runtime Secret, atau pod aplikasi. Image hasil build saja belum menyediakan fungsi inspeksi.
 
