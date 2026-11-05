@@ -55,7 +55,7 @@ Ikuti [panduan perusahaan](../PANDUAN-DEPLOY-OPENSHIFT-PERUSAHAAN.md), mulai dar
 
 ## Validasi dan batasan
 
-- Pengujian lokal: 32 pemeriksaan regresi chatbot/PDF, peringatan, VLM, bridge dan DPoP, serta permintaan Qwen nyata dengan laporan simulasi. Workflow build image yang sudah ada tetap manual; workflow regresi baru belum dipasang karena kredensial unggah tidak memiliki scope workflow.
+- Pengujian lokal: 32 pemeriksaan regresi chatbot/PDF, peringatan, VLM, bridge dan DPoP, serta permintaan Qwen nyata dengan laporan simulasi. Workflow regresi `Test inspection chatbot` sudah aktif pada push ke main dan pull request; pengujian GitHub pertama berhasil. Workflow build image yang sudah ada tetap manual dan tidak melakukan rollout cluster otomatis.
 - PDF teks tanpa foto didukung. PDF scan satu halaman penuh masih memerlukan OCR tambahan; Qwen teks tidak menilai foto langsung.
 - Hasil chatbot memakai potongan teks relevan, bukan seluruh PDF sekaligus. Feedback tersimpan untuk evaluasi dan tidak melatih ulang model otomatis.
 - Tidak ada migrasi SQL, perubahan autentikasi atau penggantian konektor bridge/DPoP pada pembaruan ini.
