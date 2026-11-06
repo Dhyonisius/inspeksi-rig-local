@@ -7,6 +7,8 @@ import path from 'node:path';
 import os from 'node:os';
 import {createPdfHub,PDF_INTERVAL_MS,PDF_RETENTION_MS} from './pdf-hub.js';
 import {discoverPdfSources} from './pdf-source-crawler.js';
+// Run CRSSC source contract tests with the existing chatbot regression entrypoint.
+import './protect-chat-source.test.js';
 const root=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const fixtureDir=await fs.mkdtemp(path.join(os.tmpdir(),'inspection-pdf-fixture-'));
 const fixture=path.join(fixtureDir,'dummy.pdf');
@@ -17,6 +19,16 @@ const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function setup(fetchImpl,intervalMs=50,now=Date.now){const dir=await fs.mkdtemp(path.join(os.tmpdir(),'inspection-pdf-test-'));const hub=createPdfHub({root,privateDir:dir,jsonBody:async req=>req.body,sendJson:(res,status,body)=>{res.status=status;res.body=body;},httpError:(status,message)=>Object.assign(new Error(message),{status}),fetchImpl,intervalMs,now});const call=async(endpoint,body={},role='admin')=>{const res={};await hub.handle({method:'POST',body},res,new URL('http://localhost'+endpoint),{role});return res;};return {hub,call,dir,async clean(){await hub.stop();hub.dispose();await fs.rm(dir,{recursive:true,force:true});}};}
 async function waitIdle(hub){for(let i=0;i<100;i++){if(!hub.status().busy)return;await pause(40);}throw new Error('Timeout');}
 test('interval produksi 15 menit dan retensi PDF 3 jam',()=>{assert.equal(PDF_INTERVAL_MS,900000);assert.equal(PDF_RETENTION_MS,10800000);});
+
+test('sumber API hanya dapat dipanggil admin dan tidak memerlukan dataset PDF',async()=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'protect-chat-auth-'));let calls=0;
+ const hub=createPdfHub({root,privateDir:dir,jsonBody:async req=>req.body,sendJson:(res,status,body)=>Object.assign(res,{status,body}),httpError:(status,message)=>Object.assign(Error(message),{status}),protectSource:{enabled:true,answer:async()=>{calls++;return {answer:'Snapshot dari API',engine:'protect-api',sources:[]};}}});
+ try{
+  const req={method:'POST',body:{message:'Status BMS-20',use_ai:false}},url=new URL('http://localhost/api/inspection-assistant');
+  await assert.rejects(hub.handle(req,{},url,{role:'operator'}),{status:403});assert.equal(calls,0);
+  const res={};await hub.handle(req,res,url,{role:'admin'});assert.equal(calls,1);assert.equal(res.body.engine,'protect-api');
+ }finally{hub.dispose();await fs.rm(dir,{recursive:true,force:true});}
+});
 test('HTML export, ekstraksi non-NA, deduplikasi, persistensi tanpa PDF, scheduler dan Stop',async()=>{
  let calls=0;const ctx=await setup(async url=>{calls++;return new Response(String(url).endsWith('/export.pdf')?pdf:'<a data-export-pdf href="/export.pdf">Export PDF</a>',{headers:{'Content-Type':String(url).endsWith('/export.pdf')?'application/pdf':'text/html'}});},80);
  try{await ctx.call('/api/pdf-hub/config',{source_url:'http://localhost:5091/'});await ctx.call('/api/pdf-hub/start');await waitIdle(ctx.hub);const reports=await ctx.hub.list();assert.equal(reports.length,1);assert.equal(reports[0].items.length,12);assert.equal(reports[0].skipped_na,2);assert.equal(reports[0].photos,12);await fs.access(path.join(ctx.dir,'pdf-hub','documents',reports[0].id,'source.pdf'));

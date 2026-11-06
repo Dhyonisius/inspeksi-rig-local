@@ -25,6 +25,7 @@ import { createAnnotationLearning } from './scripts/annotation-learning.js';
 import { createAnnotationJobs } from './scripts/annotation-jobs.js';
 import { createProtectCurationApi } from './scripts/protect-curation-api.js';
 import { createPdfHub } from './scripts/pdf-hub.js';
+import { createProtectChatSource } from './scripts/protect-chat-source.js';
 import { createVlmLearning } from './scripts/vlm-learning.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -311,7 +312,8 @@ const areaInScope = (name,type) => areaCatalog.some(a => a.name===name && a.area
 const analyzeWithOllama = createVisionAnalyzer({ baseUrl: ollamaBaseUrl, listModels: listOllamaVisionModels, prepareImage: prepareInferenceImage, monitor: performanceMonitor, getExamples: verifiedExamples });
 
 const featureContext = { jsonQuery, executeSql, databaseName, sqlText, sqlAscii, intValue, httpError, jsonBody, sendJson, send, sanitizePhotoBinary, analyzeWithOllama, listOllamaVisionModels, uploadDir, privateDir, root, audit, withInferenceLock, withDatasetReadLock, fetchInspectionConfig, prepareInferenceImage, performanceMonitor, isDatasetDeletionActive: () => datasetDeletions.size > 0 };
-const pdfHub = createPdfHub({ root, privateDir, jsonBody, sendJson, httpError, ollamaBaseUrl, withInferenceLock });
+const protectSource = createProtectChatSource();
+const pdfHub = createPdfHub({ root, privateDir, jsonBody, sendJson, httpError, ollamaBaseUrl, withInferenceLock, protectSource });
 const vlmLearning = createVlmLearning({root,privateDir,hub:pdfHub,jsonBody,sendJson,httpError});
 const protectCurationApi = createProtectCurationApi({ ...featureContext, withDatasetMutationLock });
 const datasetTools = createDatasetTools(featureContext);

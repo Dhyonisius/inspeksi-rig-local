@@ -11,7 +11,7 @@ export const PDF_INTERVAL_MS=15*60*1000;
 export const PDF_RETENTION_MS=3*60*60*1000;
 const MAX_PDF=20*1024*1024;
 const sha=data=>crypto.createHash('sha256').update(data).digest('hex');
-export function createPdfHub({root,privateDir,jsonBody,sendJson,httpError,ollamaBaseUrl,withInferenceLock,intervalMs=PDF_INTERVAL_MS,fetchImpl=fetch,now=Date.now}){
+export function createPdfHub({root,privateDir,jsonBody,sendJson,httpError,ollamaBaseUrl,withInferenceLock,protectSource,intervalMs=PDF_INTERVAL_MS,fetchImpl=fetch,now=Date.now}){
  const home=path.join(privateDir,'pdf-hub'), documents=path.join(home,'documents');
  fsSync.mkdirSync(documents,{recursive:true});
  const configFile=path.join(home,'config.json');
@@ -103,6 +103,7 @@ export function createPdfHub({root,privateDir,jsonBody,sendJson,httpError,ollama
  async function stop(){config.running=false;clearTimeout(timer);state.next_run=null;await write(configFile,config);aborter?.abort();await flight?.catch(()=>{});}
  const latest=reports=>{const seen=new Set();return [...reports].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||b.imported_at.localeCompare(a.imported_at)).filter(r=>{if(seen.has(r.rig))return false;seen.add(r.rig);return true;});};
  async function chat(body){const question=String(body.message||'').trim();if(!question||question.length>2000)throw httpError(400,'Pertanyaan harus diisi, maksimal 2.000 karakter.');
+  if(protectSource?.enabled)return protectSource.answer(body);
   const all=await list();let reports=body.document_id?all.filter(r=>r.id===body.document_id):latest(all);
   if(!body.document_id){const mentioned=reports.filter(r=>question.toLowerCase().includes(r.rig.toLowerCase())||question.toLowerCase().includes(r.rig.toLowerCase().replace(/^dummy-/,'')));if(mentioned.length)reports=mentioned;}
   if(!reports.length)return {answer:'Belum ada dataset PDF. Administrator dapat menambahkan tautan di Konfigurasi, lalu menekan Mulai.',engine:'dataset',sources:[]};
@@ -122,7 +123,9 @@ export function createPdfHub({root,privateDir,jsonBody,sendJson,httpError,ollama
  async function warningSummary(){if(warningsCache&&Date.now()-warningsCache.time<30000)return warningsCache.data;if(warningsFlight)return warningsFlight;
   warningsFlight=list().then(reports=>{const data=buildInspectionWarnings(reports);warningsCache={time:Date.now(),data};return data;}).finally(()=>warningsFlight=null);return warningsFlight;
  }
- async function handle(req,res,url,user){if(!url.pathname.startsWith('/api/pdf-hub')&&!['/api/inspection-assistant','/api/inspection-assistant/feedback'].includes(url.pathname))return false;
+ async function handle(req,res,url,user){
+  if(req.method==='GET'&&url.pathname==='/api/protect/status'){sendJson(res,200,{enabled:!!protectSource?.enabled,allowed:user.role==='admin'});return true;}
+  if(!url.pathname.startsWith('/api/pdf-hub')&&!['/api/inspection-assistant','/api/inspection-assistant/feedback'].includes(url.pathname))return false;
   if(req.method==='GET'&&url.pathname==='/api/pdf-hub/warnings'){sendJson(res,200,await warningSummary());return true;}
   if(req.method==='GET'&&url.pathname==='/api/pdf-hub/status'){sendJson(res,200,{...config,...state,interval_minutes:15,allowed_hosts:user.role==='admin'?[...allowed()]:undefined});return true;}
   if(req.method==='GET'&&url.pathname==='/api/pdf-hub/documents'){sendJson(res,200,{documents:(await list()).map(summary)});return true;}
@@ -137,7 +140,7 @@ export function createPdfHub({root,privateDir,jsonBody,sendJson,httpError,ollama
    const operation=saveQueue.catch(()=>{}).then(async()=>{let entries=[];try{entries=JSON.parse(await fs.readFile(file,'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}entries.push(entry);const tmp=file+'.tmp';await fs.writeFile(tmp,JSON.stringify(entries.slice(-500)));await fs.rename(tmp,file);});saveQueue=operation;await operation;
    sendJson(res,200,{ok:true,message:'Penilaian tersimpan untuk evaluasi jawaban; tidak melatih ulang bobot model.'});return true;
   }
-  if(req.method==='POST'&&url.pathname==='/api/inspection-assistant'){const body=await jsonBody(req);const answer=withInferenceLock&&body.use_ai!==false?await withInferenceLock(user.user_id,()=>chat(body)):await chat(body);sendJson(res,200,answer);return true;}
+  if(req.method==='POST'&&url.pathname==='/api/inspection-assistant'){if(protectSource?.enabled&&user.role!=='admin')throw httpError(403,'Akses API PROTECT pada tahap ini hanya untuk administrator aplikasi.');const body=await jsonBody(req);const answer=withInferenceLock&&body.use_ai!==false?await withInferenceLock(user.user_id,()=>chat(body)):await chat(body);sendJson(res,200,answer);return true;}
   if(user.role!=='admin')throw httpError(403,'Hanya administrator yang dapat mengatur pengambilan PDF.');
   if(req.method==='POST'&&url.pathname==='/api/pdf-hub/config'){const body=await jsonBody(req);if(config.running||state.busy)throw httpError(409,'Tekan Stop sebelum mengubah sumber.');const source=validate(String(body.source_url||''));config.source_url=source.href;config.retain_pdf=true;config.retention_hours=3;await write(configFile,config);sendJson(res,200,{ok:true});return true;}
   if(req.method==='POST'&&url.pathname==='/api/pdf-hub/start'){if(!config.source_url)throw httpError(400,'Simpan tautan sumber terlebih dahulu.');await start();sendJson(res,200,{...config,...state});return true;}

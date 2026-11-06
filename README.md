@@ -2,6 +2,8 @@
 
 ## Chatbot inspeksi terbaru
 
+**API PROTECT:** konektor admin untuk daftar rig, status equipment per rig, dan detail temuan kini tersedia sebagai opsi `PROTECT_API_ENABLED=1`. Akun disimpan melalui Secret dan hasil dibaca ulang setiap pertanyaan. Lihat [panduan API PROTECT](docs/protect-api-chat.md) sebelum mengaktifkannya di OpenShift. Mode bawaan tetap PDF.
+
 Chatbot laporan mendukung **LLM internal perusahaan melalui llm-bridge**, atau **Qwen3:4b-instruct** untuk pengujian lokal, untuk teks PDF, dengan tampilan balon chat, balas, penilaian jawaban, tombol chat terbaru, dan pop-up rincian sumber. Analisis foto tetap menggunakan model vision yang dikonfigurasi pada aplikasi.
 
 Untuk pembaruan dari repository public ke OpenShift, baca **[Panduan update chatbot dari Git](docs/update-openshift-chatbot.md)**. Kode dan konfigurasi model sudah disiapkan; endpoint AI, sumber PDF, SQL, storage dan build image perlu dikonfigurasi serta diuji pada lingkungan perusahaan.
