@@ -9,9 +9,9 @@
   titles.evaluation = 'Evaluasi model';
   titles.learning = 'Belajar dari foto'; titles['rig-dataset'] = 'PDF rig dan calon pelatihan';
   titles['protect-curation'] = 'Kurasi foto Protect';
-  titles['inspection-ai'] = 'AI Inspeksi Visual'; titles['pdf-library'] = 'Dataset PDF';
+  titles['pdf-library'] = 'Dataset PDF';
   state.inspectionProfile = 'hemat';
-  let toastTimer, pageController, renderGeneration = 0, healthGeneration = 0;
+  let floatingChat, toastTimer, pageController, renderGeneration = 0, healthGeneration = 0;
   let inspectionFlight = null, loginFlight = false, logoutFlight = null, authGeneration = 0;
   const pendingForms = new WeakSet();
   function resetDatasetPhoto() {
@@ -143,6 +143,7 @@
   function showLogin(errorText = '') {
     const localDemo = ['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname) && location.protocol === 'http:';
     renderGeneration += 1; authGeneration += 1; state.user = null;
+    floatingChat?.destroy(); floatingChat = null;
     clearTimeout(searchTimer);
     closePageTools();
     resetInspectionPhoto();
@@ -738,6 +739,7 @@
     if (!state.user) return;
     const generation = ++renderGeneration;
     const owner = state.user;
+    if (!floatingChat) floatingChat=window.InspectionChatWidget.mount({root:appShell,api,user:owner,onModels:data=>{if(state.user===owner){state.ai=data;updateChrome();}}});
     if (!titles[state.view]) state.view = 'dashboard';
     const view = state.view;
     const context = { isCurrent: () => generation === renderGeneration && owner === state.user && view === state.view };
@@ -748,7 +750,10 @@
     root.setAttribute('aria-busy', 'true');
     root.innerHTML = '<div class="card page-loading" role="status">Memuat halaman…</div>';
     try {
-      if (view === 'dashboard') await renderDashboard(context);
+      if (view === 'dashboard') {
+        await renderDashboard(context);
+        if(context.isCurrent()) { const warnings=document.createElement('div');warnings.className='pdf-settings-slot';root.append(warnings);pageController=window.InspectionWarningsUI.mount({root:warnings,api}); }
+      }
       else if (view === 'inspection') await renderInspection(context);
       else if (view === 'learning') pageController = window.LearningUI.mount({root,api,user:state.user,onModels:data=>{if(context.isCurrent()){state.ai=data;updateChrome();}},onError:error=>{if(context.isCurrent()&&error.status===401)showLogin('Sesi berakhir. Masuk kembali.');}});
       else if (view === 'rig-dataset') pageController = window.RigDatasetUI.mount({ root, api, user: state.user });
@@ -760,9 +765,8 @@
       else if (view === 'dataset-detail') await renderDatasetItems(context);
       else if (view === 'settings') {
         await renderSettings(context);
-        if (context.isCurrent()) { const slot=document.createElement('div');slot.className='pdf-settings-slot';root.prepend(slot);pageController=window.InspectionHub.mountSource({root:slot,api,user:state.user}); }
+        if (context.isCurrent()) { const slot=document.createElement('div');slot.className='pdf-settings-slot';root.prepend(slot);const source=window.InspectionHub.mountSource({root:slot,api,user:state.user});const learning=document.createElement('div');learning.className='pdf-settings-slot';root.append(learning);const trainer=window.VlmLearningUI.mount({root:learning,api,user:state.user});pageController={destroy(){source.destroy();trainer.destroy();}}; }
       }
-      else if (view === 'inspection-ai') pageController=window.InspectionHub.mountChat({root,api,user:state.user,onModels:data=>{if(context.isCurrent()){state.ai=data;updateChrome();}}});
       else if (view === 'pdf-library') pageController=window.InspectionHub.mountLibrary({root,api,user:state.user,onModels:data=>{if(context.isCurrent()){state.ai=data;updateChrome();}}});
     } catch (error) {
       if (!context.isCurrent()) return;
@@ -928,6 +932,6 @@
     if (account.data) { state.user = account.data.user; await render(); }
     else showLogin(account.error?.status === 503 ? account.error.message : '');
   }
-  window.addEventListener('pagehide', () => { renderGeneration += 1; authGeneration += 1; clearTimeout(searchTimer); resetInspectionPhoto(); closePageTools(); setSidebarOpen(false); });
+  window.addEventListener('pagehide', () => { floatingChat?.destroy(); floatingChat=null; renderGeneration += 1; authGeneration += 1; clearTimeout(searchTimer); resetInspectionPhoto(); closePageTools(); setSidebarOpen(false); });
   start();
 })();

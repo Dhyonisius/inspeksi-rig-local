@@ -26,7 +26,7 @@
    }}catch(e){if(active)root.innerHTML=`<p role="alert">${esc(e.message)}</p>`;}}
   const click=e=>{const doc=e.target.closest('[data-hub-document]');if(doc)load(doc.dataset.hubDocument);if(e.target.closest('[data-hub-back]'))load();};root.addEventListener('click',click);load();return {destroy(){active=false;abort.abort();root.removeEventListener('click',click);}};
  }
- function mountChat({root,api,onModels,user}){
+ function mountChat({root,api,onModels,user,compact=false}){
   let active=true,busy=false,replyTo=null;const history=[],abort=new AbortController();
   api('/api/ai/status',{signal:abort.signal}).then(data=>{if(active)onModels?.(data);}).catch(()=>{});
   const icon=(kind)=>({up:'<path d="M7 10v10H3V10h4Zm0 0 5-7c1-1 3 0 2 3l-1 4h6c2 0 2 1 2 2l-2 7c0 1-1 1-2 1H7"/>',down:'<path d="M7 14V4H3v10h4Zm0 0 5 7c1 1 3 0 2-3l-1-4h6c2 0 2-1 2-2l-2-7c0-1-1-1-2-1H7"/>',reply:'<path d="m9 5-6 6 6 6M3 11h10c5 0 7 3 7 8"/>'}[kind]);
@@ -37,8 +37,8 @@
   // Existing warnings and VLM learning remain available on this screen.
   const panels=document.createElement('div');panels.className='rig-existing-panels';root.append(panels);
   const warningRoot=document.createElement('div'),learning=document.createElement('div');panels.append(warningRoot,learning);
-  const warningController=window.InspectionWarningsUI.mount({root:warningRoot,api});
-  const learningController=window.VlmLearningUI.mount({root:learning,api,user});
+  const warningController=!compact&&window.InspectionWarningsUI.mount({root:warningRoot,api});
+  const learningController=!compact&&window.VlmLearningUI.mount({root:learning,api,user});
   api('/api/protect/status',{signal:abort.signal}).then(status=>{if(!active||!status.enabled)return;warningRoot.hidden=true;form.querySelector('small').textContent='Enter untuk mengirim · Shift+Enter untuk baris baru · Jawaban berdasarkan API PROTECT yang terbaca.';messages.querySelector('article.assistant p').textContent='Saya Jamila. Sumber chat saat ini adalah API PROTECT. Sebutkan kode rig untuk memeriksa status equipment dan detail temuan.';root.querySelector('.rig-chat-header p:last-child').textContent='Sumber: API PROTECT · snapshot per pertanyaan · '+(status.allowed?'akses administrator':'akses administrator diperlukan');input.placeholder='Contoh: equipment mana yang NOT_READY di rig BMS-20?';root.querySelectorAll('.rig-chat-quick button').forEach((b,i)=>b.textContent=['Daftar kode rig','Equipment mana yang NOT_READY?','Jelaskan detail temuan'][i]);}).catch(()=>{});
   const jump=()=>messages.scrollTo({top:messages.scrollHeight,behavior:'smooth'});
   root.querySelector('.rig-chat-jump button').onclick=jump;
@@ -59,7 +59,7 @@
   const quick=e=>{const button=e.target.closest('.rig-chat-quick button');if(button&&!busy){input.value=button.textContent;form.requestSubmit();}};
   const key=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();form.requestSubmit();}};
   form.addEventListener('submit',submit);input.addEventListener('keydown',key);root.addEventListener('click',quick);
-  return {destroy(){active=false;abort.abort();dialog.close();form.removeEventListener('submit',submit);input.removeEventListener('keydown',key);root.removeEventListener('click',quick);warningController.destroy();learningController.destroy();}};
+  return {destroy(){active=false;abort.abort();dialog.close();form.removeEventListener('submit',submit);input.removeEventListener('keydown',key);root.removeEventListener('click',quick);warningController?.destroy();learningController?.destroy();}};
  }
 
  window.InspectionHub={mountSource,mountLibrary,mountChat};
