@@ -13,7 +13,7 @@
     let popupSize={width:430,height:640}, resizing=null;
     const sizeKey='chatbot-popup-size-v1';
     try {const saved=JSON.parse(localStorage.getItem(sizeKey));if(saved && Number.isFinite(saved.width)&&Number.isFinite(saved.height))popupSize=saved;}catch{}
-    const grip=document.createElement('button');grip.type='button';grip.className='chat-resize-grip';grip.setAttribute('aria-label','Ubah ukuran popup chatbot');grip.title='Tarik untuk mengubah ukuran; tombol panah untuk menyesuaikan';grip.textContent='⤡';panel.append(grip);
+    const grip=document.createElement('button');grip.type='button';grip.className='chat-resize-grip';grip.setAttribute('aria-label','Ubah ukuran popup chatbot');grip.title='Tarik untuk mengubah ukuran; tombol panah untuk menyesuaikan';grip.textContent='';panel.append(grip);
     const storageKey = 'inspection-chat-position-v1';
     try { const saved=JSON.parse(localStorage.getItem(storageKey)); if(saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) position={x:Math.max(0,Math.min(1,saved.x)),y:Math.max(0,Math.min(1,saved.y))}; } catch {}
     const clamp=(n,min,max)=>Math.min(Math.max(min,max),Math.max(min,n));

@@ -7,4 +7,4 @@
 @media(max-height:560px){.inspection-popup-content .rig-chat-quick,.inspection-popup-content .hub-chat-form>small,.inspection-popup-links{display:none}.inspection-popup-header{padding:8px 12px}.inspection-popup-content .rig-assistant .hub-chat-form{padding:8px 12px}.inspection-popup-content .hub-check{margin:0}}
 @media(prefers-reduced-motion:reduce){.inspection-popup-content .hub-messages{scroll-behavior:auto}}
 
-.chat-resize-grip{position:absolute;left:0;top:0;z-index:4;width:22px;height:22px;padding:0;border:0;border-radius:0 0 8px 0;background:#ffffff30;color:white;cursor:nwse-resize;touch-action:none;font-size:17px}.chat-resize-grip:focus-visible{outline:2px solid #89baff;outline-offset:-2px}
+.chat-resize-grip{position:absolute;left:0;top:0;z-index:4;width:22px;height:22px;padding:0;border:0;border-radius:0 0 8px 0;background:transparent;color:white;cursor:nwse-resize;touch-action:none;font-size:17px}.chat-resize-grip:focus-visible{outline:2px solid #89baff;outline-offset:-2px}
