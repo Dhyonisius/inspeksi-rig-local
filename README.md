@@ -1,5 +1,9 @@
 # Inspeksi Rig Lokal
 
+## Microinteraction aplikasi dan chatbot
+
+Respons tombol, kartu interaktif, skeleton pemuatan, dan transisi chatbot tersedia di seluruh modul yang sesuai. Mendukung fokus keyboard dan reduced motion. Lihat [rincian microinteraction](docs/microinteractions.md).
+
 ## Chatbot inspeksi terbaru
 
 **API PROTECT:** konektor admin untuk daftar rig, status equipment per rig, dan detail temuan kini tersedia sebagai opsi `PROTECT_API_ENABLED=1`. Akun disimpan melalui Secret dan hasil dibaca ulang setiap pertanyaan. Lihat [panduan API PROTECT](docs/protect-api-chat.md) sebelum mengaktifkannya di OpenShift. Mode bawaan tetap PDF.

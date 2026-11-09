@@ -39,7 +39,7 @@
     }
     async function load() {
       if (destroyed || loading || !form.elements.dataset_id.value) return;
-      loading = true; selected.clear(); error(''); buttons(); root.querySelector('[data-curation-gallery]').textContent = 'Memuat foto Protect…';
+      loading = true; selected.clear(); error(''); buttons(); root.querySelector('[data-curation-gallery]').innerHTML = window.InspectionMotion.skeleton('Memuat foto Protect…');
       try {
         const query = new URLSearchParams({ state, offset: String(offset) });
         for (const name of ['rig', 'pdf', 'page', 'q']) if (form.elements[name].value) query.set(name, form.elements[name].value);

@@ -1,0 +1,35 @@
+/* Shared interaction feedback; transform-independent scale preserves widget dragging. */
+:root { --motion-fast: 150ms; --motion-ease: cubic-bezier(.2,.7,.2,1); }
+button, a.btn, [role="button"], summary {
+  transition: scale var(--motion-fast) var(--motion-ease), box-shadow var(--motion-fast), background-color var(--motion-fast), border-color var(--motion-fast), opacity var(--motion-fast);
+}
+button:not(:disabled):not(.is-dragging):active, a.btn:active, [role="button"]:active { scale: .97; }
+button:disabled { cursor: not-allowed; }
+button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #4280c6; outline-offset: 3px; }
+input, select, textarea { transition: border-color var(--motion-fast), box-shadow var(--motion-fast); }
+input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 3px #4280c61a; }
+/* Only actionable cards move. Annotation/camera canvases and static status cards stay fixed. */
+.card:has(> [data-view]), .card:has(> .card-title-row > button), .dataset-item-card:has(button), .card:has(> .card-pad > [data-dataset-items]), .dataset-item-photo, .protect-preview {
+  transition: translate 180ms var(--motion-ease), box-shadow 180ms var(--motion-ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled):not(.is-dragging):hover, a.btn:hover { box-shadow: 0 0 0 3px #4280c618; }
+  .card:has(> [data-view]):hover, .card:has(> .card-title-row > button):hover, .dataset-item-card:has(button):hover, .card:has(> .card-pad > [data-dataset-items]):hover, .dataset-item-photo:hover, .protect-preview:hover { translate: 0 -3px; box-shadow: 0 8px 20px #1833511c; }
+}
+.inspection-chat-popup:not([hidden]), dialog[open], .rig-chat-message { animation: motion-enter 180ms var(--motion-ease) both; }
+.inspection-chat-launcher.is-dragging { scale: 1; transition: none; }
+.rig-chat-message.motion-pending .rig-chat-bubble { min-width: min(230px, 60vw); }
+.motion-skeleton { padding: 18px; min-width: 0; }
+.motion-bar { display: block; height: 12px; margin: 0 0 12px; border-radius: 6px; background: #e4ebf3; overflow: hidden; position: relative; }
+.motion-bar::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, #ffffffbb, transparent); animation: motion-shimmer 1.5s ease-in-out infinite; }
+.motion-title { height: 20px; width: 48%; }
+.motion-short { width: 72%; margin-bottom: 0; }
+.motion-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@keyframes motion-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+@keyframes motion-enter { from { opacity: 0; translate: 0 5px; } to { opacity: 1; translate: 0 0; } }
+@media (prefers-reduced-motion: reduce) {
+  button, a.btn, [role="button"], summary, input, select, textarea, .card, .dataset-item-photo, .protect-preview { transition: none !important; }
+  button:active, a.btn:active, [role="button"]:active { scale: 1 !important; }
+  .card:hover, .dataset-item-photo:hover, .protect-preview:hover { translate: none !important; }
+  .inspection-chat-popup, dialog[open], .rig-chat-message, .motion-bar::after { animation: none !important; }
+}

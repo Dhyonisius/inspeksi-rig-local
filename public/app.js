@@ -661,7 +661,7 @@
       const isCurrent = () => selection === imageGeneration && state.user === owner && generation === renderGeneration && input.isConnected && wrap.isConnected && state.datasetFile === file;
       const holder = document.createElement('div'); holder.className = 'draw-canvas-wrap'; holder.id = 'draw-canvas-wrap';
       const canvas = document.createElement('canvas'); canvas.id = 'annotation-canvas';
-      wrap.innerHTML = '<div class="photo-placeholder" role="status">Memuat foto untuk anotasi.</div>';
+      wrap.innerHTML = window.InspectionMotion.skeleton('Memuat foto untuk anotasi.');
       image.onload = () => {
         if (!isCurrent()) return;
         canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
@@ -748,7 +748,7 @@
     resetInspectionPhoto();
     updateChrome();
     root.setAttribute('aria-busy', 'true');
-    root.innerHTML = '<div class="card page-loading" role="status">Memuat halaman…</div>';
+    root.innerHTML = window.InspectionMotion.skeleton('Memuat halaman…');
     try {
       if (view === 'dashboard') {
         await renderDashboard(context);
