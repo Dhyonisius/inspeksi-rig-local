@@ -1,3 +1,4 @@
+import {createChatDiagnostics,redact} from './chat-diagnostics.js';
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
@@ -14,6 +15,7 @@ const sha=data=>crypto.createHash('sha256').update(data).digest('hex');
 export function createPdfHub({root,privateDir,jsonBody,sendJson,httpError,ollamaBaseUrl,withInferenceLock,protectSource,intervalMs=PDF_INTERVAL_MS,fetchImpl=fetch,now=Date.now}){
  const home=path.join(privateDir,'pdf-hub'), documents=path.join(home,'documents');
  fsSync.mkdirSync(documents,{recursive:true});
+ const diagnostics=createChatDiagnostics(home,{now,build:sha(fsSync.readFileSync(new URL('./pdf-hub.js',import.meta.url))).slice(0,16)});
  const configFile=path.join(home,'config.json');
  let config={source_url:'',running:false,retain_pdf:false},state={busy:false,last_run:null,last_success:null,last_error:null,next_run:null,progress:null,pdfs_deleted:0,last_cleanup:null,next_cleanup:null},timer,flight,aborter,cleanupTimer,cleanupFlight,disposed=false;
  try{config={...config,...JSON.parse(fsSync.readFileSync(configFile,'utf8'))};}catch(e){if(e.code!=='ENOENT')throw e;}
@@ -125,7 +127,7 @@ export function createPdfHub({root,privateDir,jsonBody,sendJson,httpError,ollama
  }
  async function handle(req,res,url,user){
   if(req.method==='GET'&&url.pathname==='/api/protect/status'){sendJson(res,200,{enabled:!!protectSource?.enabled,allowed:user.role==='admin'});return true;}
-  if(!url.pathname.startsWith('/api/pdf-hub')&&!['/api/inspection-assistant','/api/inspection-assistant/feedback'].includes(url.pathname))return false;
+  if(!url.pathname.startsWith('/api/pdf-hub')&&!['/api/inspection-assistant','/api/inspection-assistant/feedback','/api/inspection-assistant/diagnostics'].includes(url.pathname))return false;
   if(req.method==='GET'&&url.pathname==='/api/pdf-hub/warnings'){sendJson(res,200,await warningSummary());return true;}
   if(req.method==='GET'&&url.pathname==='/api/pdf-hub/status'){sendJson(res,200,{...config,...state,interval_minutes:15,allowed_hosts:user.role==='admin'?[...allowed()]:undefined});return true;}
   if(req.method==='GET'&&url.pathname==='/api/pdf-hub/documents'){sendJson(res,200,{documents:(await list()).map(summary)});return true;}
@@ -133,14 +135,17 @@ export function createPdfHub({root,privateDir,jsonBody,sendJson,httpError,ollama
   if(req.method==='GET'&&detail){const report=(await list()).find(r=>r.id===detail[1]);if(!report)throw httpError(404,'Dokumen tidak ditemukan.');delete report.text;sendJson(res,200,{report});return true;}
   const image=url.pathname.match(/^\/api\/pdf-hub\/images\/([a-f0-9]{64})\/([a-f0-9]{64})\.jpg$/);
   if(req.method==='GET'&&image){try{const data=await fs.readFile(path.join(documents,image[1],'images',image[2]+'.jpg'));res.writeHead(200,{'Content-Type':'image/jpeg','Cache-Control':'private, max-age=3600','X-Content-Type-Options':'nosniff'});res.end(data);}catch(e){if(e.code==='ENOENT')throw httpError(404,'Foto tidak ditemukan.');throw e;}return true;}
+  if(url.pathname==='/api/inspection-assistant/diagnostics'){if(user.role!=='admin')throw httpError(403,'Diagnostik hanya untuk administrator.');if(req.method!=='POST')throw httpError(405,'Gunakan POST.');const body=await jsonBody(req);sendJson(res,200,await diagnostics.export(user,body.include_text===true));return true;}
   if(req.method==='POST'&&url.pathname==='/api/inspection-assistant/feedback'){
    const body=await jsonBody(req);if(!['up','down'].includes(body.rating))throw httpError(400,'Penilaian tidak valid.');
-   const entry={at:new Date(now()).toISOString(),user_id:user.user_id,rating:body.rating,question:String(body.question||'').slice(0,2000),answer:String(body.answer||'').slice(0,8000)};
+   const entry={at:new Date(now()).toISOString(),user_id:user.user_id,rating:body.rating,question:redact(body.question,2000),answer:redact(body.answer,8000)};
+   if(body.diagnostic_id)await diagnostics.feedback(user,body);
+   entry.correction=redact(body.correction,4000);
    const file=path.join(home,'feedback-'+sha(Buffer.from(String(user.user_id))).slice(0,24)+'.json');
    const operation=saveQueue.catch(()=>{}).then(async()=>{let entries=[];try{entries=JSON.parse(await fs.readFile(file,'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}entries.push(entry);const tmp=file+'.tmp';await fs.writeFile(tmp,JSON.stringify(entries.slice(-500)));await fs.rename(tmp,file);});saveQueue=operation;await operation;
    sendJson(res,200,{ok:true,message:'Penilaian tersimpan untuk evaluasi jawaban; tidak melatih ulang bobot model.'});return true;
   }
-  if(req.method==='POST'&&url.pathname==='/api/inspection-assistant'){if(protectSource?.enabled&&user.role!=='admin')throw httpError(403,'Akses API PROTECT pada tahap ini hanya untuk administrator aplikasi.');const body=await jsonBody(req);const answer=withInferenceLock&&body.use_ai!==false?await withInferenceLock(user.user_id,()=>chat(body)):await chat(body);sendJson(res,200,answer);return true;}
+  if(req.method==='POST'&&url.pathname==='/api/inspection-assistant'){if(protectSource?.enabled&&user.role!=='admin')throw httpError(403,'Akses API PROTECT pada tahap ini hanya untuk administrator aplikasi.');const body=await jsonBody(req);const started=Date.now();let answer;try{answer=withInferenceLock&&body.use_ai!==false?await withInferenceLock(user.user_id,()=>chat(body)):await chat(body);}catch(e){if(user.role!=='admin')throw e;answer={answer:'Permintaan gagal diproses. Administrator dapat mengekspor diagnostik untuk evaluasi.',engine:'error',failure:{category:['TimeoutError','AbortError'].includes(e.name)?'timeout':Number.isInteger(e.status)?'http':'processing',status:Number.isInteger(e.status)?e.status:null},sources:[]};}if(user.role==='admin'){try{answer.diagnostic_id=await diagnostics.record(user,body,answer,Date.now()-started,answer.engine==='error');}catch{console.warn('[diagnostics] Penyimpanan gagal; jawaban chat tetap tersedia.');}}sendJson(res,200,answer);return true;}
   if(user.role!=='admin')throw httpError(403,'Hanya administrator yang dapat mengatur pengambilan PDF.');
   if(req.method==='POST'&&url.pathname==='/api/pdf-hub/config'){const body=await jsonBody(req);if(config.running||state.busy)throw httpError(409,'Tekan Stop sebelum mengubah sumber.');const source=validate(String(body.source_url||''));config.source_url=source.href;config.retain_pdf=true;config.retention_hours=3;await write(configFile,config);sendJson(res,200,{ok:true});return true;}
   if(req.method==='POST'&&url.pathname==='/api/pdf-hub/start'){if(!config.source_url)throw httpError(400,'Simpan tautan sumber terlebih dahulu.');await start();sendJson(res,200,{...config,...state});return true;}

@@ -9,6 +9,7 @@ import {createPdfHub,PDF_INTERVAL_MS,PDF_RETENTION_MS} from './pdf-hub.js';
 import {discoverPdfSources} from './pdf-source-crawler.js';
 // Run CRSSC source contract tests with the existing chatbot regression entrypoint.
 import './protect-chat-source.test.js';
+import './chat-diagnostics.test.js';
 const root=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const fixtureDir=await fs.mkdtemp(path.join(os.tmpdir(),'inspection-pdf-fixture-'));
 const fixture=path.join(fixtureDir,'dummy.pdf');
@@ -100,3 +101,5 @@ test('API metadata paginasi ditemukan dan disimpan bersama bukti lokal',async()=
  const ctx=await setup(async raw=>{const u=new URL(raw);if(u.pathname==='/export.pdf')return new Response(pdf);const page=Number(u.searchParams.get('page')||1);return Response.json({data:[{rig:'DUMMY-IDB-08',pdf_url:'/export.pdf?report='+page,source_kind:'PHOTO_METADATA_AND_DAILY_PDF'}],pagination:{total:2,next_url:page===1?'/api/reports?page=2':null}});});
  try{await ctx.call('/api/pdf-hub/config',{source_url:'http://localhost:5091/api/reports'});const result=await ctx.hub.run();assert.equal(result.pages,2);assert.equal(result.discovered,2);assert.equal(result.complete,true);const [r]=await ctx.hub.list();assert.equal(r.source_metadata.source_kind,'PHOTO_METADATA_AND_DAILY_PDF');await fs.access(path.join(ctx.dir,'pdf-hub','documents',r.id,r.items[0].image_path));}finally{await ctx.clean();}
 });
+
+ test('diagnostic endpoint is admin-only and current-user scoped',async()=>{const ctx=await setup();try{await assert.rejects(ctx.call('/api/inspection-assistant/diagnostics',{},'operator'),{status:403});const response=await ctx.call('/api/inspection-assistant/diagnostics');assert.equal(response.body.includes_conversation,false);assert.deepEqual(response.body.entries,[]);}finally{await ctx.clean();}});

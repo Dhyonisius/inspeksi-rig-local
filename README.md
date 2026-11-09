@@ -61,3 +61,7 @@ Tekan **Terapkan usulan** untuk mengisi label, deskripsi, dan kotak di formulir.
 Hasil AI adalah indikasi visual awal, bukan keputusan kelayakan operasi. Usulan AI tidak otomatis terverifikasi. Foto yang buram atau tidak cukup jelas perlu ditinjau. Contoh terverifikasi dapat membantu Gemma, tetapi tidak mengubah bobot Gemma. Pelatihan model rig dilakukan terpisah setelah data siap.
 
 Akun demonstrasi yang dibuat skema adalah data contoh untuk penggunaan lokal. Ganti atau nonaktifkan akun demo sebelum penggunaan di luar lingkungan demonstrasi. Aplikasi mendengarkan hanya pada localhost.
+
+## Diagnostik dan koreksi chatbot
+
+Administrator dapat meninjau dan mengekspor diagnostik jawaban tanpa GPU. Lihat [panduan diagnostik](docs/chat-diagnostics.md).
