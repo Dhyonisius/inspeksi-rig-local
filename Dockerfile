@@ -27,7 +27,7 @@ RUN set -eux; \
       *) echo >&2 "Arsitektur tidak didukung: $TARGETARCH"; exit 1 ;; \
     esac; \
     echo "$node_arch" > /tmp/node_arch; \
-    printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAPT::Update::Error-Mode "any";\n' > /etc/apt/apt.conf.d/80-rig-network
+    printf 'Acquire::ForceIPv4 "true";\nAcquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAPT::Update::Error-Mode "any";\n' > /etc/apt/apt.conf.d/80-rig-network
 
 # Gerbang lisensi tetap dipertahankan: build gagal bila EULA belum disetujui.
 RUN set -eux; \
