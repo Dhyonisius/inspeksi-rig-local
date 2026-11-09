@@ -10,6 +10,10 @@
     const content = host.querySelector('.inspection-popup-content');
     const events = new AbortController(), options = {signal: events.signal};
     let chat = null, opened = false, drag = null, suppressClick = false, position = {x:1,y:1};
+    let popupSize={width:430,height:640}, resizing=null;
+    const sizeKey='chatbot-popup-size-v1';
+    try {const saved=JSON.parse(localStorage.getItem(sizeKey));if(saved && Number.isFinite(saved.width)&&Number.isFinite(saved.height))popupSize=saved;}catch{}
+    const grip=document.createElement('button');grip.type='button';grip.className='chat-resize-grip';grip.setAttribute('aria-label','Ubah ukuran popup chatbot');grip.title='Tarik untuk mengubah ukuran; tombol panah untuk menyesuaikan';grip.textContent='⤡';panel.append(grip);
     const storageKey = 'inspection-chat-position-v1';
     try { const saved=JSON.parse(localStorage.getItem(storageKey)); if(saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) position={x:Math.max(0,Math.min(1,saved.x)),y:Math.max(0,Math.min(1,saved.y))}; } catch {}
     const clamp=(n,min,max)=>Math.min(Math.max(min,max),Math.max(min,n));
@@ -23,8 +27,8 @@
       const y=b.top+margin+position.y*Math.max(0,b.height-size-margin*2);
       launcher.style.left=x+'px'; launcher.style.top=y+'px';
       if(opened) {
-        const width=Math.min(430,b.width-margin*2), height=Math.min(640,b.height-size-margin*3);
-        panel.style.width=width+'px'; panel.style.height=Math.max(180,height)+'px';
+        const width=Math.min(Math.max(320,popupSize.width),Math.max(1,b.width-margin*2)), height=Math.min(Math.max(300,popupSize.height),Math.max(1,b.height-size-margin*3));
+        panel.style.width=width+'px'; panel.style.height=height+'px';
         panel.style.left=clamp(x+size-width,b.left+margin,b.left+b.width-width-margin)+'px';
         const preferred=y-height-12;
         panel.style.top=clamp(preferred>=b.top+margin?preferred:y+size+12,b.top+margin,b.top+b.height-height-margin)+'px';
@@ -38,6 +42,12 @@
       place();
       if(focus) (value?content.querySelector('textarea'):launcher)?.focus({preventScroll:true});
     }
+    const saveSize=()=>{try{localStorage.setItem(sizeKey,JSON.stringify(popupSize));}catch{}};
+    grip.addEventListener('pointerdown',e=>{if(e.button!==0||!e.isPrimary)return;e.preventDefault();e.stopPropagation();const r=panel.getBoundingClientRect();resizing={id:e.pointerId,x:e.clientX,y:e.clientY,right:r.right,bottom:r.bottom,width:r.width,height:r.height};grip.setPointerCapture(e.pointerId);},options);
+    grip.addEventListener('pointermove',e=>{if(!resizing||e.pointerId!==resizing.id)return;const b=bounds();popupSize={width:clamp(resizing.width+resizing.x-e.clientX,Math.min(320,b.width-24),Math.max(1,resizing.right-b.left-12)),height:clamp(resizing.height+resizing.y-e.clientY,Math.min(300,b.height-104),Math.max(1,resizing.bottom-b.top-12))};panel.style.width=popupSize.width+'px';panel.style.height=popupSize.height+'px';panel.style.left=resizing.right-popupSize.width+'px';panel.style.top=resizing.bottom-popupSize.height+'px';},options);
+    const endResize=e=>{if(!resizing||resizing.id!==e.pointerId)return;resizing=null;if(grip.hasPointerCapture(e.pointerId))grip.releasePointerCapture(e.pointerId);saveSize();};
+    for(const name of ['pointerup','pointercancel','lostpointercapture'])grip.addEventListener(name,endResize,options);
+    grip.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();popupSize.width+=e.key==='ArrowLeft'?24:e.key==='ArrowRight'?-24:0;popupSize.height+=e.key==='ArrowUp'?24:e.key==='ArrowDown'?-24:0;place();saveSize();},options);
     launcher.addEventListener('click',()=>{if(suppressClick){suppressClick=false;return;}open(!opened);},options);
     launcher.addEventListener('pointerdown',e=>{
       if(e.button!==0 || !e.isPrimary)return;
