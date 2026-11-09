@@ -1,5 +1,9 @@
 # Inspeksi Rig Lokal
 
+## Tema dan halaman login terbaru
+
+Tema glassmorphism, latar login animasi dari slide 3, dan kartu peringatan yang dirapikan tersedia. Lihat [rincian tema](docs/glassmorphism.md) dan [panduan update UI di OpenShift](docs/update-openshift-ui.md).
+
 ## Microinteraction aplikasi dan chatbot
 
 Respons tombol, kartu interaktif, skeleton pemuatan, dan transisi chatbot tersedia di seluruh modul yang sesuai. Mendukung fokus keyboard dan reduced motion. Lihat [rincian microinteraction](docs/microinteractions.md).

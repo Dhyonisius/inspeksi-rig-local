@@ -1,0 +1,134 @@
+/* Frosted daylight theme. Photos and annotation canvases retain their original pixels. */
+:root {
+  --ink:#16324c; --muted:#4d657a; --primary:#235ca8; --primary-hover:#194a8b;
+  --primary-soft:#e4effb; --line:rgba(86,122,158,.22); --paper:#eaf2fa;
+  --card:rgba(255,255,255,.73); --shadow:0 12px 35px rgba(39,71,112,.07), inset 0 1px 0 rgba(255,255,255,.95);
+  --glass:rgba(255,255,255,.73); --glass-edge:rgba(255,255,255,.92);
+  background:#eaf2fa;
+}
+body {
+  background:radial-gradient(ellipse at 8% 8%,#c6e9ef 0,transparent 43%),radial-gradient(ellipse at 90% 14%,#d1ddfa 0,transparent 48%),radial-gradient(ellipse at 70% 92%,#d4ece9 0,transparent 45%),#edf3fa;
+  background-attachment:fixed; color:var(--ink);
+}
+/* Blur only the large shell surfaces; nested cards use translucent fills. */
+.sidebar,.topbar,.header-brand,.inspection-chat-popup,dialog,.login-card {
+  -webkit-backdrop-filter:blur(20px) saturate(125%); backdrop-filter:blur(20px) saturate(125%);
+}
+.sidebar { background:rgba(246,251,255,.78); border-right:1px solid var(--glass-edge); box-shadow:8px 0 36px #2f4f7910; }
+.sidebar-label { color:#536d83; letter-spacing:1.2px; }
+.sidebar-divider { background:#6485a626; }
+.nav-link { border:1px solid transparent; border-radius:12px; color:#405d77; }
+.nav-link:hover { background:#ffffffa8; border-color:#ffffff; }
+.nav-link.is-active { background:linear-gradient(120deg,#fff,#e5f0fcbb); color:#174e8c; border:1px solid #fff; box-shadow:0 4px 15px #355d8a0d; }
+.model-status,.sidebar-safety { background:#ffffff82; border:1px solid #ffffffd9; border-radius:14px; }
+.topbar { background:#f8fbffb8; border-bottom:1px solid #ffffffdf; }
+.header-brand { background:#f5faffc9; border-top:3px solid #3878b8; border-bottom-color:#ffffffdf; color:#193e62; }
+.breadcrumb { background:transparent; clip-path:none; color:var(--muted); }
+.breadcrumb strong,.crumb-separator { color:#294b6d; }
+.company-logo { background:transparent; }
+.avatar { background:linear-gradient(135deg,#ffffff,#dcebf9); color:#23578a; border:1px solid #fff; box-shadow:0 3px 8px #42618a10; }
+.card,.form-card,.upload-card,.feedback-panel,.dt-run,.learning-photo,.inspection-warnings,.rig-assistant {
+  background:var(--glass); border:1px solid var(--glass-edge); border-radius:20px; box-shadow:var(--shadow);
+}
+.card .card,.card .form-card { box-shadow:none; background:#ffffff91; }
+.card-title,h1,h2,h3 { color:var(--ink); }
+.eyebrow { color:#456783; letter-spacing:1.4px; }
+.card-caption,.hint-text,.page-subtitle { color:var(--muted); }
+.btn { border-radius:11px; min-height:40px; }
+.btn-primary { background:linear-gradient(135deg,#3576ba,#235a9e); border:1px solid #2b65a7; color:white; box-shadow:0 5px 12px #27578d20,inset 0 1px 0 #ffffff30; }
+.btn-primary:hover { background:linear-gradient(135deg,#2969ad,#194a8b); }
+.btn-secondary,.btn-quiet,.help-button,.mobile-menu,.history-tabs button,.iw-refresh,.iw-pagination button { background:#ffffffb8; border:1px solid #b6cce0; border-radius:11px; color:#245889; }
+.btn-secondary:hover { background:#fff; border-color:#7199bf; }
+.btn-danger { background:#b00020; color:#fff; border-color:#b00020; }
+.field,.select-field,.textarea-field { background:#ffffffca; border:1px solid #9fb7ce; border-radius:11px; color:#1c3851; }
+input::placeholder,textarea::placeholder { color:#5c7184; opacity:1; }
+select option { background:#fff; color:#16324c; }
+.dropzone { border:1px dashed #80a7c9; border-radius:16px; background:linear-gradient(135deg,#ffffffb8,#e9f4fbc7); }
+.dropzone:hover { background:#f5fbff; }
+.drop-icon { background:#e0edf8; border-radius:14px; color:#2a6497; }
+.table-card { overflow:hidden; }
+.table-card th,.dt-scroll th { background:#e3edf8e8; color:#294965; }
+.table-card td { border-color:#9db3cc30; }
+.table-card tbody tr:hover { background:#eff7ffb8; }
+.status-pill,.role-tag,.area-type,.box-tag,.hub-badge { border-radius:8px; }
+.warning-banner,.dt-notice,.dt-error,.analysis-error,.iw-empty { border-radius:13px; }
+.warning-banner { background:#fff7e7; color:#704100; border-color:#dec38a; }
+.dt-notice { background:#edf6fe; color:#284977; }
+.iw-card { background:#fffcf4ee; border-radius:15px; }
+.iw-card.iw-replace { background:#fff4f1f5; }
+.iw-counts>div { border-radius:13px; }
+.learning-steps li { background:#ffffff9e; border:1px solid #fff; border-radius:14px; }
+.learning-photo img,.result-image,.dt-preview,.camera-preview { background:#edf1f5; }
+/* Do not filter photographs, video or canvas: inspection fidelity is essential. */
+.archive-dialog,.form-dialog,.dt-dialog,dialog { background:rgba(248,252,255,.96); color:#16324c; border:1px solid #fff; border-radius:22px; box-shadow:0 25px 80px #16385d40,inset 0 1px 0 #fff; }
+dialog::backdrop { background:#18335045; -webkit-backdrop-filter:blur(5px); backdrop-filter:blur(5px); }
+.login-screen { background:transparent; }
+.login-card { background:#ffffffbc; border:1px solid #fff; border-top:3px solid #4b87bb; border-radius:24px; box-shadow:0 25px 70px #31577d1f,inset 0 1px 0 #fff; }
+.login-brand { color:#23578a; }
+.toast { border:1px solid #ffffff70; border-radius:13px; background:#214766f2; }
+.app-footer { border-color:#6485a62c; color:#4b647a; }
+/* Chat sits on its own frosted surface, with legible opaque message bubbles. */
+.inspection-chat-popup { background:rgba(243,249,255,.87); border:1px solid #fff; border-radius:24px; box-shadow:0 20px 65px #153c702e,inset 0 1px 0 #fff; }
+.inspection-popup-header { background:linear-gradient(120deg,#2867a7ee,#235487f2); border-bottom:1px solid #ffffff60; }
+.inspection-chat-launcher { background:linear-gradient(140deg,#3d81bc,#255a93); border:1px solid #d9f1ff; box-shadow:0 8px 25px #1a528e35,inset 0 1px 0 #ffffff80; }
+.inspection-popup-content>.rig-assistant { background:transparent; }
+.rig-chat-quick button,.rig-chat-sources button { background:#ffffffce; border-color:#b8cfe1; border-radius:12px; color:#315978; }
+.rig-chat-bubble { background:#fffffff0; border:1px solid #ffffff; border-radius:16px; box-shadow:0 3px 10px #314c7207; color:#213e57; }
+.rig-chat-message.user .rig-chat-bubble { background:#dfeefc; border-color:#c8def4; color:#1c456e; }
+.rig-chat-avatar { background:#e2effa; color:#245b8d; }
+.inspection-popup-content .rig-assistant .hub-chat-form { background:#f6fbffb3; border-top:1px solid #ffffff; }
+.inspection-popup-content .rig-assistant .hub-compose,.hub-compose { background:#ffffffed; border:1px solid #afc7de; box-shadow:0 3px 12px #38587b0a; border-radius:15px; }
+.inspection-popup-content .rig-assistant textarea { background:transparent; }
+.motion-bar { background:#dce8f3; }
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  .sidebar,.topbar,.header-brand,.inspection-chat-popup,.login-card,dialog { background:#f5f9fd; }
+}
+@media (max-width:850px) { .sidebar { background:rgba(244,249,255,.97); } .header-brand { background:transparent; backdrop-filter:none; -webkit-backdrop-filter:none; } }
+@media (prefers-reduced-transparency:reduce) { :root { --glass:#f8fbff; } .sidebar,.topbar,.header-brand,.inspection-chat-popup,.login-card,dialog { background:#f8fbff; backdrop-filter:none; -webkit-backdrop-filter:none; } }
+@media (forced-colors:active) { .card,.sidebar,.topbar,.inspection-chat-popup,dialog { border:1px solid CanvasText; box-shadow:none; } .btn-primary { background:ButtonFace; color:ButtonText; } }
+@media print { body { background:white; } .card,dialog { background:white; box-shadow:none; backdrop-filter:none; } }
+/* Backdrop-filter creates a containing block; keep the brand above the sidebar. */
+@media (min-width:851px) { .header-brand { position:absolute; left:-252px; top:0; width:252px; } }
+/* Compact login layout with safe vertical scrolling on shorter screens. */
+.login-screen { padding:24px 16px; align-items:safe center; }
+.login-card { width:min(100%,440px); padding:28px 30px; margin:auto; }
+.login-card .login-brand { margin:0 0 18px; }
+.login-card h1 { margin:0 0 10px; font-size:26px; line-height:1.25; }
+.login-card .page-subtitle { margin:0 0 22px; font-size:14px; line-height:1.6; }
+.login-card .inline-label { margin-top:16px; margin-bottom:7px; font-size:13px; }
+.login-card .field { min-height:44px; }
+.login-card .login-note { margin-top:18px; font-size:12px; line-height:1.6; }
+@media(max-width:480px) { .login-screen { padding:18px 12px; } .login-card { padding:24px; border-radius:20px; } }
+/* Slide 3 artwork stays behind the login form; only the background is blurred. */
+.login-screen { isolation:isolate; background:#0b2545; }
+.login-backdrop { position:fixed; inset:-16px; z-index:-2; pointer-events:none; overflow:hidden; filter:blur(7px); }
+.login-backdrop svg { width:100%; height:100%; display:block; }
+.login-screen::after { content:''; position:fixed; inset:0; z-index:-1; pointer-events:none; background:linear-gradient(120deg,rgba(7,24,49,.33),rgba(12,37,65,.13)); }
+.login-screen .login-card { position:relative; background:rgba(246,251,255,.82); border:1px solid rgba(255,255,255,.78); border-top:2px solid #d5edff; box-shadow:0 24px 80px #06192f55,inset 0 1px 0 #fff; backdrop-filter:blur(24px) saturate(115%); -webkit-backdrop-filter:blur(24px) saturate(115%); }
+@media(prefers-reduced-motion:reduce) { .login-particles { display:none; } }
+@media(prefers-reduced-transparency:reduce) { .login-screen .login-card { background:#f6fbff; backdrop-filter:none; -webkit-backdrop-filter:none; } }
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) { .login-screen .login-card { background:#f6fbff; } }
+@media print { .login-backdrop,.login-screen::after { display:none; } }
+/* Give readiness and equipment findings separate, readable glass surfaces. */
+.inspection-warnings { padding:24px; margin-top:20px; }
+.inspection-warnings + .inspection-warnings { margin-top:18px; }
+.inspection-warnings .iw-heading { align-items:flex-start; gap:16px; margin-bottom:14px; }
+.inspection-warnings h2 { font-size:21px; line-height:1.3; margin:4px 0 0; }
+.inspection-warnings .iw-eyebrow { color:#4d6b87; font-size:10px; letter-spacing:1.4px; }
+.inspection-warnings .iw-intro { margin:0 0 18px; color:#4d657a; font-size:13px; }
+.iw-readiness-badge { flex-shrink:0; border:1px solid #b9cadb; border-radius:20px; background:#eaf1f8; color:#3a5570; padding:7px 11px; font-size:11px; font-weight:600; }
+.iw-readiness .iw-grid:empty { display:none; }
+.iw-readiness-note { border-top:1px solid #9fb9cf40; padding-top:14px; margin:16px 0 0; color:#536b80; font-size:12px; line-height:1.65; }
+.inspection-warnings .iw-counts { gap:12px; margin:0 0 20px; }
+.inspection-warnings .iw-counts>div { padding:16px; background:#eef4faad; border-color:#b9cde04d; }
+.inspection-warnings .iw-counts>div:nth-child(2) { background:#fff0ed9e; border-color:#efcfca; }
+.inspection-warnings .iw-counts>div:first-child { background:#fff6e7af; border-color:#e9d8b8; }
+.inspection-warnings .iw-counts strong { font-size:28px; color:#314f6a; }
+.inspection-warnings .iw-counts span { margin-top:7px; font-size:11px; color:#536b80; }
+.iw-controls[hidden] { display:none; }
+.inspection-warnings .iw-empty { display:flex; flex-direction:column; gap:8px; padding:24px; border:1px dashed #a9c2d9; background:#ffffff80; border-radius:14px; color:#4d657a; }
+.iw-empty strong { font-size:14px; color:#294b69; }
+.iw-empty span { max-width:560px; font-size:12px; line-height:1.7; }
+.inspection-warnings .iw-note { border-top:1px solid #9fb9cf40; padding-top:14px; margin:18px 0 0; font-size:11px; line-height:1.7; color:#536b80; }
+.inspection-warnings .iw-refresh { min-height:36px; padding:8px 13px; }
+@media(max-width:580px) { .inspection-warnings { padding:18px; } .iw-readiness .iw-heading { flex-direction:column; gap:10px; } .inspection-warnings .iw-counts { gap:8px; } .inspection-warnings .iw-counts>div { padding:12px 9px; } .inspection-warnings .iw-counts span { font-size:10px; overflow-wrap:anywhere; } .inspection-warnings .iw-empty { padding:18px; } }
