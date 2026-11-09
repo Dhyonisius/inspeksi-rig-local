@@ -11,6 +11,11 @@ FROM mcr.microsoft.com/mssql/server:2022-latest AS sqltools
 
 FROM ubuntu:22.04
 
+# Bootstrap HTTPS trust before installing the Ubuntu certificate package.
+COPY --from=sqltools /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+RUN set -eux; \
+    sed -i 's|http://archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g; s|http://security.ubuntu.com/ubuntu|https://security.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+
 ARG ACCEPT_SQLTOOLS_EULA=N
 ARG INSTALL_RIG_TRAINING=false
 ARG INSTALL_VLM_TRAINING=false
