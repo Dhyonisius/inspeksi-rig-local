@@ -56,15 +56,25 @@ export function createVisionAnalyzer({ baseUrl, listModels, prepareImage, monito
           options: { temperature: 0, num_ctx: 4096, num_predict: settings.num_predict }, stream: false, keep_alive: '5m' }),
         signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(settings.timeout_ms)]) : AbortSignal.timeout(settings.timeout_ms),
       });
-      if (!response.ok) throw new Error(`Permintaan Ollama gagal (HTTP ${response.status}).`);
+      if (!response.ok) {
+        let detail={};try{detail=await response.json();}catch{}
+        const reason=typeof detail.error==='string' && /^LLM internal menjawab HTTP \d{3}$|^Jawaban LLM internal tidak berisi teks\.$/.test(detail.error)?' '+detail.error:'';
+        throw new Error(`Layanan analisis foto gagal (HTTP ${response.status}).${reason}`);
+      }
       const result = await response.json();
       options.signal?.throwIfAborted();
-      const parsed = JSON.parse(result.message?.content || '{}');
+      const content=result.message?.content;
+      console.info('[vision-response]',JSON.stringify({model:model.name,finish_reason:result.done_reason||'unknown',characters:typeof content==='string'?content.length:0,tokens:Number(result.eval_count)||0}));
+      if(['length','max_tokens'].includes(result.done_reason))throw new Error('Jawaban model terpotong karena batas token. Coba mode Detail atau kurangi panjang temuan.');
+      if(typeof content!=='string'||!content.trim())throw new Error('Model tidak mengembalikan jawaban analisis foto.');
+      const clean=content.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
+      let parsed;try{parsed=JSON.parse(clean);}catch{throw new Error('Jawaban model bukan JSON lengkap yang valid. Hasil belum dapat dinilai; periksa metadata vision-response pada log aplikasi.');}
+      if(!parsed||typeof parsed!=='object'||Array.isArray(parsed)||typeof parsed.summary!=='string'||!parsed.summary.trim())throw new Error('Ringkasan hasil model kosong atau tidak sesuai format.');
       if (!['POTENSI_TIDAK_AMAN', 'TIDAK_TAMPAK_BAHAYA', 'TIDAK_PASTI'].includes(parsed.status) || !Array.isArray(parsed.findings)) throw new Error('Jawaban model lokal tidak sesuai format hasil pemeriksaan.');
       const hazardByCode = new Map(relevantHazards.map(hazard => [hazard.code, hazard]));
       const findings = parsed.findings.slice(0, settings.max_findings).map(item => {
-        const hazard = hazardByCode.get(String(item.code || '').toUpperCase());
-        if (!hazard) return null;
+        const hazard = hazardByCode.get(String(item?.code || '').toUpperCase());
+        if (!hazard) throw new Error('Kode temuan model tidak terdapat pada katalog inspeksi.');
         const confidence = Number(item.confidence);
         return { hazard_type_id: hazard.hazard_type_id, hazard_name: hazard.name,
           severity: ['RENDAH', 'SEDANG', 'TINGGI'].includes(item.severity) ? item.severity : hazard.default_severity,

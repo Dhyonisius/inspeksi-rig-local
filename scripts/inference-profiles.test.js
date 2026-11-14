@@ -58,3 +58,9 @@ test('contradictory hazard-free label is normalized to uncertain', async t => {
   const output = await analyze(Buffer.from('original'), 'gemma3:4b', { name: 'Kantor', area_type: 'KANTOR' }, hazards);
   assert.equal(output.status, 'TIDAK_PASTI'); assert.equal(output.findings[0].confidence, 1);
 });
+
+for(const [label,reply,pattern] of [
+ ['truncated',{done_reason:'length',message:{content:'{"status":"TIDAK_PASTI"'}},/terpotong/],
+ ['invalid JSON',{done_reason:'stop',message:{content:'{"summary":"unfinished'}},/JSON lengkap/],
+ ['empty',{done_reason:'stop',message:{content:''}},/tidak mengembalikan/]
+])test('vision rejects '+label,async t=>{t.mock.method(globalThis,'fetch',async()=>({ok:true,json:async()=>reply}));const analyze=createVisionAnalyzer({baseUrl:'http://test',listModels:async()=>[{name:'test'}],prepareImage:async()=>({buffer:Buffer.from('jpeg'),width:128,height:128})});await assert.rejects(analyze(Buffer.from('photo'),'test',{name:'Rig',area_type:'RIG'},[]),pattern);});
