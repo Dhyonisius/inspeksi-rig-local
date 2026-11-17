@@ -228,10 +228,11 @@ function sendError(response, error) {
 
 async function requestBody(incoming) {
   const chunks = [];
+  const limit = incoming.url?.split('?')[0] === '/api/inspection-assistant/pdf/import' ? 50*1024*1024+512*1024 : maxRequestBytes;
   let total = 0;
   for await (const chunk of incoming) {
     total += chunk.length;
-    if (total > maxRequestBytes) throw httpError(413, 'Berkas terlalu besar. Batas unggahan adalah 8 MB.');
+    if (total > limit) throw httpError(413, limit > maxRequestBytes ? 'PDF maksimal 50 MB.' : 'Batas unggahan adalah 8 MB.');
     chunks.push(chunk);
   }
   return Buffer.concat(chunks);
@@ -314,7 +315,7 @@ const analyzeWithOllama = createVisionAnalyzer({ baseUrl: ollamaBaseUrl, listMod
 
 const featureContext = { jsonQuery, executeSql, databaseName, sqlText, sqlAscii, intValue, httpError, jsonBody, sendJson, send, sanitizePhotoBinary, analyzeWithOllama, listOllamaVisionModels, uploadDir, privateDir, root, audit, withInferenceLock, withDatasetReadLock, fetchInspectionConfig, prepareInferenceImage, performanceMonitor, isDatasetDeletionActive: () => datasetDeletions.size > 0 };
 const protectSource = createProtectChatSource();
-const pdfChat = createPdfChat({sendJson,httpError,ollamaBaseUrl,withInferenceLock});
+const pdfChat = createPdfChat({sendJson,httpError,ollamaBaseUrl,privateDir,withInferenceLock});
 const pdfHub = createPdfHub({ root, privateDir, jsonBody, sendJson, httpError, ollamaBaseUrl, withInferenceLock, protectSource });
 const vlmLearning = createVlmLearning({root,privateDir,hub:pdfHub,jsonBody,sendJson,httpError});
 const protectCurationApi = createProtectCurationApi({ ...featureContext, withDatasetMutationLock });
