@@ -1,3 +1,4 @@
+import { createPdfChat } from './scripts/chat-pdf.js';
 import http from 'node:http';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -313,6 +314,7 @@ const analyzeWithOllama = createVisionAnalyzer({ baseUrl: ollamaBaseUrl, listMod
 
 const featureContext = { jsonQuery, executeSql, databaseName, sqlText, sqlAscii, intValue, httpError, jsonBody, sendJson, send, sanitizePhotoBinary, analyzeWithOllama, listOllamaVisionModels, uploadDir, privateDir, root, audit, withInferenceLock, withDatasetReadLock, fetchInspectionConfig, prepareInferenceImage, performanceMonitor, isDatasetDeletionActive: () => datasetDeletions.size > 0 };
 const protectSource = createProtectChatSource();
+const pdfChat = createPdfChat({sendJson,httpError,ollamaBaseUrl,withInferenceLock});
 const pdfHub = createPdfHub({ root, privateDir, jsonBody, sendJson, httpError, ollamaBaseUrl, withInferenceLock, protectSource });
 const vlmLearning = createVlmLearning({root,privateDir,hub:pdfHub,jsonBody,sendJson,httpError});
 const protectCurationApi = createProtectCurationApi({ ...featureContext, withDatasetMutationLock });
@@ -336,6 +338,7 @@ async function handleApi(request, response, url) {
     return sendJson(response, 200, { app: 'Inspeksi Visual', host, api_version: 15, deployment_mode: production ? 'server' : 'local', ...(production ? { database: health.database, error: health.database === 'ready' ? undefined : 'Database belum siap. Hubungi administrator.' } : health) });
   }
   const user = pathname === '/api/auth/login' ? null : requireUser(request);
+  if (user && await pdfChat(request,response,url,user)) return;
   if (user && await pdfHub.handle(request, response, url, user)) return;
   if (user && await vlmLearning.handle(request,response,url,user)) return;
   if (user && await protectCurationApi(request, response, url, user)) return;
